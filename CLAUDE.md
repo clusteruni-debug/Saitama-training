@@ -2,7 +2,7 @@
 
 ## 📋 프로젝트
 - **이름**: Saitama Training (원펀트레이닝)
-- **스택**: React + TypeScript + Tailwind CSS v4 + Supabase
+- **스택**: React + TypeScript + Tailwind CSS v4 + Firebase
 - **배포**: Vercel
 - **한 줄 설명**: 사이타마(원펀맨) 컨셉의 프로그레시브 오버로드 홈트레이닝 앱
 
@@ -73,7 +73,7 @@ src/
 │   ├── stats/         # 기록, 통계, 대시보드
 │   └── ui/            # 공통 UI (버튼, 카드, 모달 등)
 ├── stores/            # zustand 스토어
-├── lib/               # supabase 클라이언트, 유틸리티
+├── lib/               # firebase 클라이언트, 유틸리티
 ├── types/             # TypeScript 타입 정의
 ├── hooks/             # 커스텀 훅
 └── docs/
@@ -83,12 +83,14 @@ src/
 ### 상태관리
 - **zustand** 사용 (Redux 금지)
 - 스토어는 `src/stores/` 하위에 기능별 분리
-- 서버 상태(Supabase)와 클라이언트 상태 분리
+- localStorage persist (zustand/middleware)로 기본 저장
+- 서버 상태(Firebase)와 클라이언트 상태 분리
 
-### Supabase
-- 클라이언트: `src/lib/supabase.ts`
-- 환경변수: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
-- RLS(Row Level Security) 필수 적용
+### Firebase
+- 클라이언트: `src/lib/firebase.ts`
+- 환경변수: `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID` 등
+- Security Rules UID 기반 필수 적용
+- Auth (Google 로그인) + Firestore (운동 기록 동기화)
 
 ### 스타일링
 - **Tailwind CSS v4** (@tailwindcss/vite 플러그인)
@@ -106,7 +108,7 @@ src/
 ## 🚨 절대 규칙
 
 1. **`any` 타입 금지** — 반드시 정확한 타입 사용
-2. **Supabase RLS 없이 배포 금지**
+2. **Firebase Security Rules 없이 배포 금지**
 3. **확인 없이 스키마 변경 금지**
 4. **3개 이상 파일 동시 수정 시 확인**
 5. **커밋은 작동하는 상태에서만**
@@ -119,7 +121,7 @@ saitama-training/
 ├── src/
 │   ├── components/       # 기능별 컴포넌트
 │   ├── stores/           # zustand 스토어
-│   ├── lib/              # supabase, 유틸리티
+│   ├── lib/              # firebase, 유틸리티
 │   ├── types/            # 타입 정의
 │   ├── hooks/            # 커스텀 훅
 │   ├── App.tsx           # 라우팅 루트
@@ -161,7 +163,7 @@ docs/CHANGELOG.md에 기록:
 | P0 | 오늘의 트레이닝 화면 | 🔵 미착수 |
 | P0 | 프로그레션 트리 데이터 + UI | 🔵 미착수 |
 | P0 | RPE 피드백 → 자동 조절 로직 | 🔵 미착수 |
-| P0 | Supabase Auth + 프로필 | 🔵 미착수 |
+| P0 | Firebase Auth + 프로필 | 🔵 미착수 |
 | P1 | 히어로 랭크 시스템 | 🔵 미착수 |
 | P1 | 세트 카운터 + 휴식 타이머 | 🔵 미착수 |
 | P1 | 기록/통계 대시보드 | 🔵 미착수 |

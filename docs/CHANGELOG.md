@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## [2026-02-11] (세션 1)
+> 🔄 Supabase → Firebase 전환 + GitHub 연결
+
+### 작업 내용
+- Supabase 제거, Firebase SDK 설치
+- `src/lib/firebase.ts` 생성 (Auth + Firestore)
+- `src/lib/supabase.ts` 삭제
+- zustand persist 미들웨어 적용 (localStorage 자동 저장)
+- `.env.example` Firebase 환경변수로 업데이트
+- CLAUDE.md 전체 Supabase → Firebase 반영
+- GitHub remote 연결 + push
+
+---
+
 ## [2026-02-11] (세션 0)
 > 📦 프로젝트 초기화 | React + TypeScript + Tailwind + Supabase
 
