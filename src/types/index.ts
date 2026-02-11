@@ -77,6 +77,13 @@ export interface UserProfile {
   createdAt: string
 }
 
+// 트랙별 사용자 목표
+export interface TrackGoal {
+  track: TrackType
+  targetReps: number    // 목표 렙수 (달리기는 분)
+  daysPerWeek: number   // 주 몇 회 운동 (1~7)
+}
+
 // 설정
 export interface Settings {
   restTimerSeconds: number  // 기본 60초

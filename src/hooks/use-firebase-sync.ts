@@ -91,14 +91,35 @@ export function useFirebaseSync() {
 
   function mergeFromCloud(data: Record<string, unknown>) {
     const store = useTrainingStore.getState()
+    const updates: Record<string, unknown> = {}
 
+    // trackProgress 병합
     if (data.trackProgress) {
       const tp = data.trackProgress as Record<string, typeof store.trackProgress.push>
-      if (tp.push) store.setTrackProgress('push', tp.push)
-      if (tp.squat) store.setTrackProgress('squat', tp.squat)
-      if (tp.pull) store.setTrackProgress('pull', tp.pull)
-      if (tp.core) store.setTrackProgress('core', tp.core)
-      if (tp.run) store.setTrackProgress('run', tp.run)
+      const merged = { ...store.trackProgress }
+      for (const track of ['push', 'squat', 'pull', 'core', 'run'] as const) {
+        if (tp[track]) merged[track] = tp[track]
+      }
+      updates.trackProgress = merged
+    }
+
+    // 단순 값 병합
+    if (data.rank != null) updates.rank = data.rank
+    if (typeof data.totalVolume === 'number') updates.totalVolume = data.totalVolume
+    if (typeof data.streakDays === 'number') updates.streakDays = data.streakDays
+    if (data.lastWorkoutDate !== undefined) updates.lastWorkoutDate = data.lastWorkoutDate
+
+    // 객체 병합 (클라우드 데이터 우선)
+    if (data.sessions) updates.sessions = data.sessions
+    if (data.consecutiveEasy) updates.consecutiveEasy = data.consecutiveEasy
+    if (data.settings) updates.settings = { ...store.settings, ...(data.settings as object) }
+    if (data.programs) updates.programs = data.programs
+    if (data.trackGoals) updates.trackGoals = { ...store.trackGoals, ...(data.trackGoals as object) }
+    if (data.activeTracks) updates.activeTracks = data.activeTracks
+
+    // 한 번에 set
+    if (Object.keys(updates).length > 0) {
+      useTrainingStore.setState(updates)
     }
   }
 
@@ -117,6 +138,9 @@ export function useFirebaseSync() {
         streakDays: state.streakDays,
         sessions: state.sessions,
         consecutiveEasy: state.consecutiveEasy,
+        programs: state.programs,
+        trackGoals: state.trackGoals,
+        activeTracks: state.activeTracks,
         settings: state.settings,
         lastWorkoutDate: state.lastWorkoutDate,
         updatedAt: new Date().toISOString(),

@@ -18,7 +18,21 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
+          navigator.serviceWorker.register('/sw.js').then((reg) => {
+            // 주기적으로 업데이트 확인 (1시간)
+            setInterval(() => reg.update(), 60 * 60 * 1000)
+          })
+        })
+        // SW 업데이트 알림 수신
+        navigator.serviceWorker.addEventListener('message', (e) => {
+          if (e.data && e.data.type === 'SW_UPDATED') {
+            const bar = document.createElement('div')
+            bar.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#ffc107;color:#000;padding:10px 20px;border-radius:12px;font-size:13px;font-weight:600;z-index:9999;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.3)'
+            bar.textContent = '새 버전이 있습니다. 탭하여 업데이트'
+            bar.onclick = () => location.reload()
+            document.body.appendChild(bar)
+            setTimeout(() => bar.remove(), 15000)
+          }
         })
       }
     </script>

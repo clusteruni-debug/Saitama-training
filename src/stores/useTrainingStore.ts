@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { TrackType, RPEFeedback, WorkoutSession, TrackProgress, HeroRank, Settings, ProgramGoal } from '../types'
+import type { TrackType, RPEFeedback, WorkoutSession, TrackProgress, HeroRank, Settings, ProgramGoal, TrackGoal } from '../types'
 import { RPE_DELTA, RANK_THRESHOLDS, getTree, STRENGTH_TRACKS, SAITAMA_GOALS } from '../data/progression-data'
 
 // 날짜 유틸
@@ -32,6 +32,9 @@ interface TrainingState {
   // 코치 프로그램 (자동 생성)
   programs: ProgramGoal[]
 
+  // 사용자 목표 (트랙별)
+  trackGoals: Record<TrackType, TrackGoal>
+
   // 설정
   settings: Settings
 
@@ -49,6 +52,7 @@ interface TrainingState {
   updateSettings: (partial: Partial<Settings>) => void
   setHasPullUpBar: (v: boolean) => void
   setPrograms: (programs: ProgramGoal[]) => void
+  setTrackGoal: (track: TrackType, goal: Partial<TrackGoal>) => void
   getTodaySessions: () => WorkoutSession[]
   isTrackCompletedToday: (track: TrackType) => boolean
 }
@@ -65,6 +69,14 @@ const defaultConsecutiveEasy: Record<TrackType, number> = {
   push: 0, squat: 0, pull: 0, core: 0, run: 0,
 }
 
+const defaultTrackGoals: Record<TrackType, TrackGoal> = {
+  push: { track: 'push', targetReps: SAITAMA_GOALS.push, daysPerWeek: 3 },
+  squat: { track: 'squat', targetReps: SAITAMA_GOALS.squat, daysPerWeek: 3 },
+  pull: { track: 'pull', targetReps: SAITAMA_GOALS.pull, daysPerWeek: 3 },
+  core: { track: 'core', targetReps: SAITAMA_GOALS.core, daysPerWeek: 3 },
+  run: { track: 'run', targetReps: SAITAMA_GOALS.run, daysPerWeek: 3 },
+}
+
 export const useTrainingStore = create<TrainingState>()(
   persist(
     (set, get) => ({
@@ -78,6 +90,7 @@ export const useTrainingStore = create<TrainingState>()(
       sessions: {},
       consecutiveEasy: defaultConsecutiveEasy,
       programs: [],
+      trackGoals: defaultTrackGoals,
       settings: { restTimerSeconds: 60, soundEnabled: true },
       lastWorkoutDate: null,
 
@@ -269,6 +282,14 @@ export const useTrainingStore = create<TrainingState>()(
 
       setPrograms: (programs) => set({ programs }),
 
+      setTrackGoal: (track, goal) =>
+        set((state) => ({
+          trackGoals: {
+            ...state.trackGoals,
+            [track]: { ...state.trackGoals[track], ...goal },
+          },
+        })),
+
       getTodaySessions: () => {
         const state = get()
         return state.sessions[getLocalDateStr()] || []
@@ -294,6 +315,7 @@ export const useTrainingStore = create<TrainingState>()(
         sessions: state.sessions,
         consecutiveEasy: state.consecutiveEasy,
         programs: state.programs,
+        trackGoals: state.trackGoals,
         settings: state.settings,
         lastWorkoutDate: state.lastWorkoutDate,
       }),
