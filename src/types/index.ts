@@ -84,6 +84,9 @@ export interface TrackGoal {
   daysPerWeek: number   // 주 몇 회 운동 (1~7)
 }
 
+// 운동 목적
+export type TrainingPurpose = 'strength' | 'endurance' | 'diet' | 'saitama' | 'health'
+
 // 설정
 export interface Settings {
   restTimerSeconds: number  // 기본 60초

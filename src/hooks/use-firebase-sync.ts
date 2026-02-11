@@ -109,6 +109,9 @@ export function useFirebaseSync() {
     if (typeof data.streakDays === 'number') updates.streakDays = data.streakDays
     if (typeof data.maxStreakDays === 'number') updates.maxStreakDays = data.maxStreakDays
     if (data.lastWorkoutDate !== undefined) updates.lastWorkoutDate = data.lastWorkoutDate
+    if (typeof data.nickname === 'string') updates.nickname = data.nickname
+    if (typeof data.trainingPurpose === 'string') updates.trainingPurpose = data.trainingPurpose
+    if (data.targetDate !== undefined) updates.targetDate = data.targetDate
 
     // 객체 병합 (클라우드 데이터 우선)
     if (data.sessions) updates.sessions = data.sessions
@@ -138,6 +141,9 @@ export function useFirebaseSync() {
         totalVolume: state.totalVolume,
         streakDays: state.streakDays,
         maxStreakDays: state.maxStreakDays,
+        nickname: state.nickname,
+        trainingPurpose: state.trainingPurpose,
+        targetDate: state.targetDate,
         sessions: state.sessions,
         consecutiveEasy: state.consecutiveEasy,
         programs: state.programs,

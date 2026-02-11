@@ -3,10 +3,19 @@ import type { TrackType } from '../../types'
 import { useTrainingStore } from '../../stores/useTrainingStore'
 import { TRACK_INFO, SAITAMA_GOALS } from '../../data/progression-data'
 import { generateCoachTips, generatePrograms, getSaitamaProgress } from '../../lib/smart-coach'
+import { analyzeRPERatio, calculatePlan } from '../../lib/plan-calculator'
 import { TrackCard } from './track-card'
 import { showToast } from '../ui/toast'
 
 const ALL_TRACKS: TrackType[] = ['push', 'squat', 'pull', 'core', 'run']
+
+const PURPOSE_LABELS: Record<string, string> = {
+  saitama: '사이타마 도전',
+  strength: '근력 향상',
+  endurance: '체력 개선',
+  diet: '다이어트',
+  health: '건강 유지',
+}
 
 export function HomePage() {
   const rank = useTrainingStore((s) => s.rank)
@@ -20,6 +29,10 @@ export function HomePage() {
   const programs = useTrainingStore((s) => s.programs)
   const setPrograms = useTrainingStore((s) => s.setPrograms)
   const levelUp = useTrainingStore((s) => s.levelUp)
+  const nickname = useTrainingStore((s) => s.nickname)
+  const trainingPurpose = useTrainingStore((s) => s.trainingPurpose)
+  const targetDate = useTrainingStore((s) => s.targetDate)
+  const trackGoals = useTrainingStore((s) => s.trackGoals)
 
   // 프로그램 자동 생성 (미달성 프로그램 없는 트랙에 대해)
   useEffect(() => {
@@ -48,6 +61,32 @@ export function HomePage() {
   const completedTracks = new Set(todaySessions.map((s) => s.track)).size
   const activeCount = activeTracks.length
 
+  // D-day 계산
+  const dDay = useMemo(() => {
+    if (!targetDate) return null
+    const target = new Date(targetDate)
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+    target.setHours(0, 0, 0, 0)
+    return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  }, [targetDate])
+
+  // 가장 가까운 마일스톤
+  const nextMilestone = useMemo(() => {
+    for (const t of activeTracks) {
+      const goal = trackGoals[t]
+      const prog = trackProgress[t]
+      if (prog.currentReps >= goal.targetReps) continue
+      const rpeRatio = analyzeRPERatio(sessions, t)
+      const plan = calculatePlan(t, prog.currentReps, goal, rpeRatio)
+      const nextMs = plan.milestones.find((ms) => ms.reps > prog.currentReps)
+      if (nextMs) {
+        return { track: t, label: nextMs.label, week: nextMs.week, estimatedDate: plan.estimatedDate }
+      }
+    }
+    return null
+  }, [activeTracks, trackGoals, trackProgress, sessions])
+
   const handleLevelUp = (track: TrackType) => {
     const ok = levelUp(track)
     if (ok) {
@@ -63,10 +102,16 @@ export function HomePage() {
         <div className="flex items-center justify-between mb-2">
           <div>
             <h1 className="text-2xl font-black text-[var(--color-hero-yellow)]">
-              SAITAMA TRAINING
+              {nickname ? `${nickname}의 훈련` : 'SAITAMA TRAINING'}
             </h1>
             <p className="text-[var(--color-text-secondary)] text-sm mt-1">
-              매일 한계를 넘어서라
+              {PURPOSE_LABELS[trainingPurpose] || '매일 한계를 넘어서라'}
+              {dDay !== null && dDay > 0 && (
+                <span className="ml-2 text-[var(--color-hero-yellow)] font-bold">D-{dDay}</span>
+              )}
+              {dDay !== null && dDay <= 0 && (
+                <span className="ml-2 text-green-400 font-bold">D-Day!</span>
+              )}
             </p>
           </div>
           <div className="flex flex-col items-center">
@@ -121,6 +166,26 @@ export function HomePage() {
           </div>
         </div>
       </header>
+
+      {/* 향후 플랜 요약 */}
+      {nextMilestone && (
+        <section className="mb-6">
+          <div className="bg-[var(--color-bg-card)] rounded-xl p-4 border-l-4 border-[var(--color-hero-yellow)]">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-[var(--color-text-secondary)] uppercase mb-1">다음 마일스톤</p>
+                <p className="text-sm font-bold text-[var(--color-text-primary)]">
+                  {TRACK_INFO[nextMilestone.track].emoji} {nextMilestone.label}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-lg font-black text-[var(--color-hero-yellow)]">{nextMilestone.week}주</p>
+                <p className="text-[10px] text-[var(--color-text-secondary)]">{nextMilestone.estimatedDate}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 오늘의 트레이닝 */}
       <section>

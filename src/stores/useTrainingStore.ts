@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { TrackType, RPEFeedback, WorkoutSession, TrackProgress, HeroRank, Settings, ProgramGoal, TrackGoal } from '../types'
+import type { TrackType, RPEFeedback, WorkoutSession, TrackProgress, HeroRank, Settings, ProgramGoal, TrackGoal, TrainingPurpose } from '../types'
 import { RPE_DELTA, RANK_THRESHOLDS, getTree, STRENGTH_TRACKS, SAITAMA_GOALS } from '../data/progression-data'
 
 // 날짜 유틸
@@ -13,6 +13,11 @@ interface TrainingState {
   // 온보딩
   onboardingCompleted: boolean
   hasPullUpBar: boolean
+
+  // 개인화
+  nickname: string
+  trainingPurpose: TrainingPurpose
+  targetDate: string | null  // YYYY-MM-DD 목표 달성 기한
 
   // 오늘 할 트랙 선택
   activeTracks: TrackType[]
@@ -43,7 +48,10 @@ interface TrainingState {
   lastWorkoutDate: string | null
 
   // 액션
-  completeOnboarding: (levels: Record<TrackType, number>, hasPullUpBar: boolean) => void
+  completeOnboarding: (levels: Record<TrackType, number>, hasPullUpBar: boolean, nickname?: string, purpose?: TrainingPurpose, targetDate?: string) => void
+  setNickname: (name: string) => void
+  setTrainingPurpose: (purpose: TrainingPurpose) => void
+  setTargetDate: (date: string | null) => void
   setTrackProgress: (track: TrackType, progress: TrackProgress) => void
   toggleActiveTrack: (track: TrackType) => void
   completeWorkout: (track: TrackType, sets: { reps: number; completed: boolean }[], rpe: RPEFeedback, durationSeconds?: number) => void
@@ -84,6 +92,9 @@ export const useTrainingStore = create<TrainingState>()(
     (set, get) => ({
       onboardingCompleted: false,
       hasPullUpBar: false,
+      nickname: '',
+      trainingPurpose: 'saitama' as TrainingPurpose,
+      targetDate: null,
       activeTracks: ['push', 'squat', 'pull', 'core', 'run'],
       trackProgress: defaultProgress,
       rank: 'C',
@@ -97,7 +108,7 @@ export const useTrainingStore = create<TrainingState>()(
       settings: { restTimerSeconds: 60, soundEnabled: true },
       lastWorkoutDate: null,
 
-      completeOnboarding: (levels, hasPullUpBar) => {
+      completeOnboarding: (levels, hasPullUpBar, nickname, purpose, targetDate) => {
         const tree = getTree(hasPullUpBar)
         const newProgress: Record<string, TrackProgress> = {}
         for (const track of ['push', 'squat', 'pull', 'core', 'run'] as TrackType[]) {
@@ -115,10 +126,17 @@ export const useTrainingStore = create<TrainingState>()(
         set({
           onboardingCompleted: true,
           hasPullUpBar,
+          nickname: nickname || '',
+          trainingPurpose: purpose || 'saitama',
+          targetDate: targetDate || null,
           trackProgress: newProgress as Record<TrackType, TrackProgress>,
           consecutiveEasy: defaultConsecutiveEasy,
         })
       },
+
+      setNickname: (name) => set({ nickname: name }),
+      setTrainingPurpose: (purpose) => set({ trainingPurpose: purpose }),
+      setTargetDate: (date) => set({ targetDate: date }),
 
       setTrackProgress: (track, progress) =>
         set((state) => ({
@@ -310,6 +328,9 @@ export const useTrainingStore = create<TrainingState>()(
         set({
           onboardingCompleted: false,
           hasPullUpBar: false,
+          nickname: '',
+          trainingPurpose: 'saitama' as TrainingPurpose,
+          targetDate: null,
           activeTracks: ['push', 'squat', 'pull', 'core', 'run'],
           trackProgress: defaultProgress,
           rank: 'C',
@@ -330,6 +351,9 @@ export const useTrainingStore = create<TrainingState>()(
       partialize: (state) => ({
         onboardingCompleted: state.onboardingCompleted,
         hasPullUpBar: state.hasPullUpBar,
+        nickname: state.nickname,
+        trainingPurpose: state.trainingPurpose,
+        targetDate: state.targetDate,
         activeTracks: state.activeTracks,
         trackProgress: state.trackProgress,
         rank: state.rank,

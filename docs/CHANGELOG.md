@@ -1,7 +1,16 @@
 # CHANGELOG
 
 ## [2026-02-11] (세션 5)
-> 🔧 UI/UX 개선 — 랭크업 애니메이션, 스트릭, 차트, 진행률, 초기화
+> 🔧 UI/UX 개선 + 개인화 목적 설정 + 향후 플랜
+
+### 개인화 목적 설정
+- `src/types/index.ts` — `TrainingPurpose` 타입 추가 (saitama/strength/endurance/diet/health)
+- `src/stores/useTrainingStore.ts` — `nickname`, `trainingPurpose`, `targetDate` 상태 + 액션 추가
+- `src/components/onboarding/onboarding-page.tsx` — 4단계 온보딩 (목적→프로필→장비→레벨)
+- `src/components/profile/profile-page.tsx` — 목표/닉네임/목적/기한 편집 UI
+
+### 향후 플랜 (홈 위젯)
+- `src/components/training/home-page.tsx` — 닉네임 인사 + D-day 카운트다운 + 다음 마일스톤 위젯
 
 ### 랭크업 애니메이션 강화
 - `src/components/rank/rank-up-modal.tsx` — 파티클 폭죽 + 배지 회전 + 글로우 링 + 랭크별 색상/메시지
@@ -23,7 +32,7 @@
 - `src/stores/useTrainingStore.ts` — `resetAllData()` 액션 추가
 
 ### Firebase sync
-- `src/hooks/use-firebase-sync.ts` — `maxStreakDays` 필드 추가
+- `src/hooks/use-firebase-sync.ts` — `nickname`, `trainingPurpose`, `targetDate`, `maxStreakDays` 필드 추가
 
 ### 빌드
 - 빌드 성공 검증 완료 (tsc -b + vite build)

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { TrainingPurpose } from '../../types'
 import { useTrainingStore } from '../../stores/useTrainingStore'
 import { useAuthStore } from '../../stores/useAuthStore'
 import { RankBadge } from '../rank/rank-badge'
@@ -13,13 +14,32 @@ const syncStatusLabels = {
   error: { text: '동기화 오류', color: 'text-red-400' },
 }
 
+const PURPOSE_OPTIONS: { value: TrainingPurpose; emoji: string; label: string }[] = [
+  { value: 'saitama', emoji: '👊', label: '사이타마 도전' },
+  { value: 'strength', emoji: '💪', label: '근력 향상' },
+  { value: 'endurance', emoji: '🏃', label: '체력 개선' },
+  { value: 'diet', emoji: '🔥', label: '다이어트' },
+  { value: 'health', emoji: '🧘', label: '건강 유지' },
+]
+
 export function ProfilePage() {
   const rank = useTrainingStore((s) => s.rank)
   const totalVolume = useTrainingStore((s) => s.totalVolume)
   const streakDays = useTrainingStore((s) => s.streakDays)
   const resetAllData = useTrainingStore((s) => s.resetAllData)
+  const nickname = useTrainingStore((s) => s.nickname)
+  const trainingPurpose = useTrainingStore((s) => s.trainingPurpose)
+  const targetDate = useTrainingStore((s) => s.targetDate)
+  const setNickname = useTrainingStore((s) => s.setNickname)
+  const setTrainingPurpose = useTrainingStore((s) => s.setTrainingPurpose)
+  const setTargetDate = useTrainingStore((s) => s.setTargetDate)
   const syncStatus = useAuthStore((s) => s.syncStatus)
   const statusInfo = syncStatusLabels[syncStatus]
+
+  const [editingProfile, setEditingProfile] = useState(false)
+  const [tempNickname, setTempNickname] = useState(nickname)
+  const [tempPurpose, setTempPurpose] = useState(trainingPurpose)
+  const [tempDate, setTempDate] = useState(targetDate || '')
 
   // 데이터 초기화 2단계 확인
   const [resetStep, setResetStep] = useState(0) // 0: 미시작, 1: 1차 확인, 2: 최종 확인
@@ -55,12 +75,99 @@ export function ProfilePage() {
         <RankBadge rank={rank} size="lg" />
         <div>
           <p className="text-lg font-bold text-[var(--color-text-primary)]">
-            {rank === 'S' ? 'S급 히어로' : rank === 'A' ? 'A급 히어로' : rank === 'B' ? 'B급 히어로' : 'C급 히어로'}
+            {nickname || (rank === 'S' ? 'S급 히어로' : rank === 'A' ? 'A급 히어로' : rank === 'B' ? 'B급 히어로' : 'C급 히어로')}
           </p>
           <p className="text-sm text-[var(--color-text-secondary)]">
             볼륨 {totalVolume.toLocaleString()} · {streakDays}일 연속
           </p>
         </div>
+      </div>
+
+      {/* 목표 & 개인화 */}
+      <div className="bg-[var(--color-bg-card)] rounded-2xl p-4 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider font-medium">
+            내 목표
+          </h3>
+          <button
+            onClick={() => {
+              if (editingProfile) {
+                setNickname(tempNickname)
+                setTrainingPurpose(tempPurpose)
+                setTargetDate(tempDate || null)
+                showToast('프로필 저장됨', 'success')
+              } else {
+                setTempNickname(nickname)
+                setTempPurpose(trainingPurpose)
+                setTempDate(targetDate || '')
+              }
+              setEditingProfile(!editingProfile)
+            }}
+            className="text-xs text-[var(--color-hero-yellow)] font-medium"
+          >
+            {editingProfile ? '저장' : '편집'}
+          </button>
+        </div>
+
+        {editingProfile ? (
+          <div className="flex flex-col gap-3">
+            <div>
+              <label className="text-[10px] text-[var(--color-text-secondary)] mb-1 block">히어로 이름</label>
+              <input
+                type="text"
+                value={tempNickname}
+                onChange={(e) => setTempNickname(e.target.value)}
+                placeholder="닉네임"
+                maxLength={20}
+                className="w-full bg-white/10 rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-[var(--color-text-secondary)] mb-1 block">운동 목적</label>
+              <div className="flex flex-wrap gap-2">
+                {PURPOSE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setTempPurpose(opt.value)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      tempPurpose === opt.value
+                        ? 'bg-[var(--color-hero-yellow)] text-black'
+                        : 'bg-white/10 text-[var(--color-text-secondary)]'
+                    }`}
+                  >
+                    {opt.emoji} {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] text-[var(--color-text-secondary)] mb-1 block">목표 기한</label>
+              <input
+                type="date"
+                value={tempDate}
+                onChange={(e) => setTempDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className="w-full bg-white/10 rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] outline-none"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-[var(--color-text-secondary)]">목적</span>
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                {PURPOSE_OPTIONS.find((o) => o.value === trainingPurpose)?.emoji}{' '}
+                {PURPOSE_OPTIONS.find((o) => o.value === trainingPurpose)?.label}
+              </span>
+            </div>
+            {targetDate && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[var(--color-text-secondary)]">목표 기한</span>
+                <span className="text-sm font-medium text-[var(--color-text-primary)]">{targetDate}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 로그인 */}
