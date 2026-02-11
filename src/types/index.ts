@@ -57,3 +57,9 @@ export interface UserProfile {
   trackProgress: Record<TrackType, TrackProgress>
   createdAt: string
 }
+
+// 설정
+export interface Settings {
+  restTimerSeconds: number  // 기본 60초
+  soundEnabled: boolean
+}
