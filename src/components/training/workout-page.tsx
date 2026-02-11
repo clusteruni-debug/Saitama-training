@@ -91,8 +91,33 @@ export function WorkoutPage() {
     )
   }
 
+  // 진행률 계산
+  const completedSets = setResults.length
+  const progressPct = totalSets > 0 ? Math.round((completedSets / totalSets) * 100) : 0
+
   return (
     <div className="min-h-dvh flex flex-col px-4 py-6 max-w-lg mx-auto">
+      {/* 전체 진행률 바 */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[10px] text-[var(--color-text-secondary)]">
+            {completedSets}/{totalSets} 세트
+          </span>
+          <span className="text-[10px] font-bold text-[var(--color-hero-yellow)]">
+            {progressPct}%
+          </span>
+        </div>
+        <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${phase === 'exercise' ? 'progress-stripe' : ''}`}
+            style={{
+              width: `${progressPct}%`,
+              backgroundColor: 'var(--color-hero-yellow)',
+            }}
+          />
+        </div>
+      </div>
+
       {/* 헤더 */}
       <div className="flex items-center justify-between mb-8">
         <button
@@ -128,7 +153,15 @@ export function WorkoutPage() {
         )}
 
         {phase === 'rest' && (
-          <RestTimer onFinish={handleRestFinish} />
+          <div className="w-full flex flex-col items-center gap-4">
+            {/* 이전 세트 결과 */}
+            {setResults.length > 0 && (
+              <p className="text-sm text-[var(--color-hero-yellow)] font-medium">
+                {setResults.length}세트 완료! {timeBased ? `${setResults[setResults.length - 1].reps}초` : `${setResults[setResults.length - 1].reps}회`} 수행
+              </p>
+            )}
+            <RestTimer onFinish={handleRestFinish} />
+          </div>
         )}
 
         {phase === 'rpe' && (
@@ -142,8 +175,19 @@ export function WorkoutPage() {
               운동 완료!
             </h2>
             <p className="text-[var(--color-text-secondary)] mt-2">
-              총 {setResults.reduce((s, r) => s + r.reps, 0)}회 수행
+              {totalSets}세트 · 총 {setResults.reduce((s, r) => s + r.reps, 0)}회 수행
             </p>
+            {/* 세트별 결과 */}
+            <div className="flex justify-center gap-2 mt-4">
+              {setResults.map((r, i) => (
+                <div key={i} className="bg-[var(--color-bg-card)] rounded-lg px-3 py-2 text-center">
+                  <p className="text-[10px] text-[var(--color-text-secondary)]">{i + 1}세트</p>
+                  <p className="text-sm font-bold text-[var(--color-text-primary)]">
+                    {timeBased ? `${r.reps}초` : `${r.reps}회`}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

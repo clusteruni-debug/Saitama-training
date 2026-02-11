@@ -22,6 +22,7 @@ interface TrainingState {
   rank: HeroRank
   totalVolume: number
   streakDays: number
+  maxStreakDays: number
 
   // 운동 히스토리 (날짜별)
   sessions: Record<string, WorkoutSession[]>
@@ -55,6 +56,7 @@ interface TrainingState {
   setTrackGoal: (track: TrackType, goal: Partial<TrackGoal>) => void
   getTodaySessions: () => WorkoutSession[]
   isTrackCompletedToday: (track: TrackType) => boolean
+  resetAllData: () => void
 }
 
 const defaultProgress: Record<TrackType, TrackProgress> = {
@@ -87,6 +89,7 @@ export const useTrainingStore = create<TrainingState>()(
       rank: 'C',
       totalVolume: 0,
       streakDays: 0,
+      maxStreakDays: 0,
       sessions: {},
       consecutiveEasy: defaultConsecutiveEasy,
       programs: [],
@@ -257,7 +260,7 @@ export const useTrainingStore = create<TrainingState>()(
         const lastDate = state.lastWorkoutDate
 
         if (!lastDate) {
-          set({ streakDays: 1 })
+          set({ streakDays: 1, maxStreakDays: Math.max(state.maxStreakDays || 0, 1) })
           return
         }
         if (lastDate === today) return
@@ -267,9 +270,10 @@ export const useTrainingStore = create<TrainingState>()(
         const diffDays = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24))
 
         if (diffDays === 1) {
-          set({ streakDays: state.streakDays + 1 })
+          const newStreak = state.streakDays + 1
+          set({ streakDays: newStreak, maxStreakDays: Math.max(state.maxStreakDays || 0, newStreak) })
         } else if (diffDays > 1) {
-          set({ streakDays: 1 })
+          set({ streakDays: 1, maxStreakDays: Math.max(state.maxStreakDays || 0, state.streakDays) })
         }
       },
 
@@ -301,6 +305,25 @@ export const useTrainingStore = create<TrainingState>()(
         const todaySessions = state.sessions[today] || []
         return todaySessions.some((s) => s.track === track)
       },
+
+      resetAllData: () => {
+        set({
+          onboardingCompleted: false,
+          hasPullUpBar: false,
+          activeTracks: ['push', 'squat', 'pull', 'core', 'run'],
+          trackProgress: defaultProgress,
+          rank: 'C',
+          totalVolume: 0,
+          streakDays: 0,
+          maxStreakDays: 0,
+          sessions: {},
+          consecutiveEasy: defaultConsecutiveEasy,
+          programs: [],
+          trackGoals: defaultTrackGoals,
+          settings: { restTimerSeconds: 60, soundEnabled: true },
+          lastWorkoutDate: null,
+        })
+      },
     }),
     {
       name: 'saitama-training',
@@ -312,6 +335,7 @@ export const useTrainingStore = create<TrainingState>()(
         rank: state.rank,
         totalVolume: state.totalVolume,
         streakDays: state.streakDays,
+        maxStreakDays: state.maxStreakDays,
         sessions: state.sessions,
         consecutiveEasy: state.consecutiveEasy,
         programs: state.programs,

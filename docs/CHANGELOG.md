@@ -1,5 +1,35 @@
 # CHANGELOG
 
+## [2026-02-11] (세션 5)
+> 🔧 UI/UX 개선 — 랭크업 애니메이션, 스트릭, 차트, 진행률, 초기화
+
+### 랭크업 애니메이션 강화
+- `src/components/rank/rank-up-modal.tsx` — 파티클 폭죽 + 배지 회전 + 글로우 링 + 랭크별 색상/메시지
+- `src/index.css` — rank-up-spin, particle-burst, glow-pulse, flame-flicker, progress-stripe 애니메이션 추가
+
+### 스트릭 표시 강화
+- `src/stores/useTrainingStore.ts` — `maxStreakDays` 추가 (persist + Firebase sync)
+- `src/components/stats/streak-display.tsx` — 최고 기록 표시, 마일스톤 진행률 바, 불꽃 애니메이션, 스트릭 끊김 경고
+
+### 주간/월간 차트 개선
+- `src/components/stats/weekly-chart.tsx` — Y축 눈금, 합계/평균 표시, 평균 점선, 월간 30일 모드 지원
+- `src/components/stats/stats-page.tsx` — 주간/월간 토글 UI 추가
+
+### 운동 중 진행률 바
+- `src/components/training/workout-page.tsx` — 상단 세트 진행률 바 + 세트별 결과 표시 + 휴식 중 이전 세트 결과
+
+### 프로필 데이터 초기화
+- `src/components/profile/profile-page.tsx` — 2단계 확인 모달 + 전체 데이터 리셋 기능
+- `src/stores/useTrainingStore.ts` — `resetAllData()` 액션 추가
+
+### Firebase sync
+- `src/hooks/use-firebase-sync.ts` — `maxStreakDays` 필드 추가
+
+### 빌드
+- 빌드 성공 검증 완료 (tsc -b + vite build)
+
+---
+
 ## [2026-02-11] (세션 4)
 > 🗺️ 로드맵/플랜 + Firebase sync 완성 + SW 업데이트
 

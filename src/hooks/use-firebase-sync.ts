@@ -107,6 +107,7 @@ export function useFirebaseSync() {
     if (data.rank != null) updates.rank = data.rank
     if (typeof data.totalVolume === 'number') updates.totalVolume = data.totalVolume
     if (typeof data.streakDays === 'number') updates.streakDays = data.streakDays
+    if (typeof data.maxStreakDays === 'number') updates.maxStreakDays = data.maxStreakDays
     if (data.lastWorkoutDate !== undefined) updates.lastWorkoutDate = data.lastWorkoutDate
 
     // 객체 병합 (클라우드 데이터 우선)
@@ -136,6 +137,7 @@ export function useFirebaseSync() {
         rank: state.rank,
         totalVolume: state.totalVolume,
         streakDays: state.streakDays,
+        maxStreakDays: state.maxStreakDays,
         sessions: state.sessions,
         consecutiveEasy: state.consecutiveEasy,
         programs: state.programs,

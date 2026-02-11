@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTrainingStore } from '../../stores/useTrainingStore'
 import { TRACK_INFO, SAITAMA_GOALS } from '../../data/progression-data'
 import { getSaitamaProgress } from '../../lib/smart-coach'
@@ -7,13 +7,18 @@ import { WeeklyChart } from './weekly-chart'
 import { StreakDisplay } from './streak-display'
 import { TrackSummary } from './track-summary'
 
+type ChartMode = 'weekly' | 'monthly'
+
 export function StatsPage() {
   const rank = useTrainingStore((s) => s.rank)
   const totalVolume = useTrainingStore((s) => s.totalVolume)
   const streakDays = useTrainingStore((s) => s.streakDays)
+  const maxStreakDays = useTrainingStore((s) => s.maxStreakDays)
   const sessions = useTrainingStore((s) => s.sessions)
   const trackProgress = useTrainingStore((s) => s.trackProgress)
   const activeTracks = useTrainingStore((s) => s.activeTracks)
+
+  const [chartMode, setChartMode] = useState<ChartMode>('weekly')
 
   const saitamaPct = useMemo(
     () => getSaitamaProgress(trackProgress, activeTracks),
@@ -52,7 +57,7 @@ export function StatsPage() {
 
       {/* 스트릭 */}
       <div className="mb-6">
-        <StreakDisplay days={streakDays} />
+        <StreakDisplay days={streakDays} maxDays={maxStreakDays} />
       </div>
 
       {/* 운동한 날 */}
@@ -96,9 +101,25 @@ export function StatsPage() {
         </div>
       </div>
 
-      {/* 주간 차트 */}
+      {/* 볼륨 차트 — 주간/월간 토글 */}
       <div className="mb-6 bg-[var(--color-bg-card)] rounded-2xl p-4">
-        <WeeklyChart sessions={sessions} />
+        {/* 토글 */}
+        <div className="flex gap-1 mb-4 bg-white/5 rounded-lg p-0.5">
+          {(['weekly', 'monthly'] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setChartMode(m)}
+              className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${
+                chartMode === m
+                  ? 'bg-[var(--color-hero-yellow)] text-black'
+                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+              }`}
+            >
+              {m === 'weekly' ? '주간' : '월간'}
+            </button>
+          ))}
+        </div>
+        <WeeklyChart sessions={sessions} mode={chartMode} />
       </div>
 
       {/* 트랙 요약 */}
