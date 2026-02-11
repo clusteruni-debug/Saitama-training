@@ -1,6 +1,6 @@
 import type { TrackType } from '../../types'
 import { useTrainingStore } from '../../stores/useTrainingStore'
-import { PROGRESSION_TREE, TRACK_INFO, isTimeBased } from '../../data/progression-data'
+import { getTree, TRACK_INFO, isTimeBased, isRunTrack } from '../../data/progression-data'
 
 interface TrackTreeProps {
   track: TrackType
@@ -8,7 +8,9 @@ interface TrackTreeProps {
 
 export function TrackTree({ track }: TrackTreeProps) {
   const progress = useTrainingStore((s) => s.trackProgress[track])
-  const exercises = PROGRESSION_TREE[track]
+  const hasPullUpBar = useTrainingStore((s) => s.hasPullUpBar)
+  const tree = getTree(hasPullUpBar)
+  const exercises = tree[track]
   const info = TRACK_INFO[track]
 
   return (
@@ -21,20 +23,20 @@ export function TrackTree({ track }: TrackTreeProps) {
         </span>
       </div>
 
-      {/* 레벨 진행 맵 — 수직 타임라인 */}
       <div className="relative pl-6">
-        {/* 세로선 */}
         <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-white/10" />
 
         {exercises.map((ex, idx) => {
           const isCurrent = idx === progress.currentLevel
           const isCompleted = idx < progress.currentLevel
           const isLocked = idx > progress.currentLevel
-          const timeBased = isTimeBased(ex.id)
+          const timeBased = isTimeBased(ex.id, hasPullUpBar)
+          const runTrack = isRunTrack(ex.id)
+          const unit = runTrack ? '분' : timeBased ? '초' : '회'
+          const repsDisplay = isCurrent ? progress.currentReps : ex.reps
 
           return (
             <div key={ex.id} className="relative flex items-start gap-3 mb-4 last:mb-0">
-              {/* 노드 */}
               <div
                 className={`absolute -left-6 top-0.5 w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center z-10 ${
                   isCompleted
@@ -54,7 +56,6 @@ export function TrackTree({ track }: TrackTreeProps) {
                 )}
               </div>
 
-              {/* 내용 */}
               <div className={`flex-1 ${isLocked ? 'opacity-40' : ''}`}>
                 <div className="flex items-baseline justify-between">
                   <p className={`text-sm font-medium ${
@@ -63,8 +64,7 @@ export function TrackTree({ track }: TrackTreeProps) {
                     {ex.name}
                   </p>
                   <span className="text-xs text-[var(--color-text-secondary)]">
-                    {ex.sets} × {isCurrent ? progress.currentReps : ex.reps}
-                    {timeBased ? '초' : '회'}
+                    {runTrack ? `${repsDisplay}${unit}` : `${ex.sets} × ${repsDisplay}${unit}`}
                   </span>
                 </div>
                 {isCurrent && (

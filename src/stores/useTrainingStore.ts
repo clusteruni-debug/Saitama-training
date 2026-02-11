@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { TrackType, RPEFeedback, WorkoutSession, TrackProgress, HeroRank, Settings } from '../types'
-import { LEVEL_UP_THRESHOLD, RANK_THRESHOLDS, PROGRESSION_TREE } from '../data/progression-data'
+import type { TrackType, RPEFeedback, WorkoutSession, TrackProgress, HeroRank, Settings, ProgramGoal } from '../types'
+import { RPE_DELTA, RANK_THRESHOLDS, getTree, STRENGTH_TRACKS, SAITAMA_GOALS } from '../data/progression-data'
 
 // 날짜 유틸
 function getLocalDateStr(): string {
@@ -10,6 +10,13 @@ function getLocalDateStr(): string {
 }
 
 interface TrainingState {
+  // 온보딩
+  onboardingCompleted: boolean
+  hasPullUpBar: boolean
+
+  // 오늘 할 트랙 선택
+  activeTracks: TrackType[]
+
   // 현재 진행 상태
   trackProgress: Record<TrackType, TrackProgress>
   rank: HeroRank
@@ -22,6 +29,9 @@ interface TrainingState {
   // 레벨업 연속 easy 카운트
   consecutiveEasy: Record<TrackType, number>
 
+  // 코치 프로그램 (자동 생성)
+  programs: ProgramGoal[]
+
   // 설정
   settings: Settings
 
@@ -29,51 +39,92 @@ interface TrainingState {
   lastWorkoutDate: string | null
 
   // 액션
+  completeOnboarding: (levels: Record<TrackType, number>, hasPullUpBar: boolean) => void
   setTrackProgress: (track: TrackType, progress: TrackProgress) => void
-  completeWorkout: (track: TrackType, sets: { reps: number; completed: boolean }[], rpe: RPEFeedback) => void
-  checkAndLevelUp: (track: TrackType) => boolean
+  toggleActiveTrack: (track: TrackType) => void
+  completeWorkout: (track: TrackType, sets: { reps: number; completed: boolean }[], rpe: RPEFeedback, durationSeconds?: number) => void
+  levelUp: (track: TrackType) => boolean
   calculateRank: () => HeroRank
   updateStreak: () => void
   updateSettings: (partial: Partial<Settings>) => void
+  setHasPullUpBar: (v: boolean) => void
+  setPrograms: (programs: ProgramGoal[]) => void
   getTodaySessions: () => WorkoutSession[]
   isTrackCompletedToday: (track: TrackType) => boolean
 }
 
 const defaultProgress: Record<TrackType, TrackProgress> = {
-  push: { track: 'push', currentLevel: 0, currentReps: 10, currentSets: 3 },
-  squat: { track: 'squat', currentLevel: 0, currentReps: 10, currentSets: 3 },
-  pull: { track: 'pull', currentLevel: 0, currentReps: 5, currentSets: 3 },
-  core: { track: 'core', currentLevel: 0, currentReps: 10, currentSets: 3 },
+  push: { track: 'push', currentLevel: 0, currentReps: 10, currentSets: 3, bestVolume: 0, bestSeconds: null },
+  squat: { track: 'squat', currentLevel: 0, currentReps: 10, currentSets: 3, bestVolume: 0, bestSeconds: null },
+  pull: { track: 'pull', currentLevel: 0, currentReps: 5, currentSets: 3, bestVolume: 0, bestSeconds: null },
+  core: { track: 'core', currentLevel: 0, currentReps: 10, currentSets: 3, bestVolume: 0, bestSeconds: null },
+  run: { track: 'run', currentLevel: 0, currentReps: 10, currentSets: 1, bestVolume: 0, bestSeconds: null },
 }
 
 const defaultConsecutiveEasy: Record<TrackType, number> = {
-  push: 0, squat: 0, pull: 0, core: 0,
+  push: 0, squat: 0, pull: 0, core: 0, run: 0,
 }
 
 export const useTrainingStore = create<TrainingState>()(
   persist(
     (set, get) => ({
+      onboardingCompleted: false,
+      hasPullUpBar: false,
+      activeTracks: ['push', 'squat', 'pull', 'core', 'run'],
       trackProgress: defaultProgress,
       rank: 'C',
       totalVolume: 0,
       streakDays: 0,
       sessions: {},
       consecutiveEasy: defaultConsecutiveEasy,
+      programs: [],
       settings: { restTimerSeconds: 60, soundEnabled: true },
       lastWorkoutDate: null,
+
+      completeOnboarding: (levels, hasPullUpBar) => {
+        const tree = getTree(hasPullUpBar)
+        const newProgress: Record<string, TrackProgress> = {}
+        for (const track of ['push', 'squat', 'pull', 'core', 'run'] as TrackType[]) {
+          const level = levels[track] ?? 0
+          const exercise = tree[track][level]
+          newProgress[track] = {
+            track,
+            currentLevel: level,
+            currentReps: exercise.reps,
+            currentSets: exercise.sets,
+            bestVolume: 0,
+            bestSeconds: null,
+          }
+        }
+        set({
+          onboardingCompleted: true,
+          hasPullUpBar,
+          trackProgress: newProgress as Record<TrackType, TrackProgress>,
+          consecutiveEasy: defaultConsecutiveEasy,
+        })
+      },
 
       setTrackProgress: (track, progress) =>
         set((state) => ({
           trackProgress: { ...state.trackProgress, [track]: progress },
         })),
 
-      completeWorkout: (track, sets, rpe) => {
+      toggleActiveTrack: (track) =>
+        set((state) => {
+          const current = state.activeTracks
+          if (current.includes(track)) {
+            if (current.length <= 1) return state
+            return { activeTracks: current.filter((t) => t !== track) }
+          }
+          return { activeTracks: [...current, track] }
+        }),
+
+      completeWorkout: (track, sets, rpe, durationSeconds) => {
         const state = get()
         const today = getLocalDateStr()
         const progress = state.trackProgress[track]
         const volume = sets.reduce((sum, s) => sum + (s.completed ? s.reps : 0), 0)
 
-        // 세션 기록 생성
         const session: WorkoutSession = {
           id: crypto.randomUUID(),
           userId: 'local',
@@ -84,12 +135,19 @@ export const useTrainingStore = create<TrainingState>()(
           sets: sets.map((s, i) => ({ setNumber: i + 1, reps: s.reps, completed: s.completed })),
           rpe,
           totalVolume: volume,
+          durationSeconds,
           createdAt: new Date().toISOString(),
         }
 
-        // RPE에 따른 렙수 조정
-        const rpeDelta = rpe === 'easy' ? 2 : rpe === 'hard' ? -2 : 0
-        const newReps = Math.max(1, progress.currentReps + rpeDelta)
+        // 3축 프로그레션: 볼륨 우선 증가
+        const delta = RPE_DELTA[rpe]
+        const newReps = Math.max(1, progress.currentReps + delta)
+
+        // 개인 최고 기록 갱신
+        const newBestVolume = Math.max(progress.bestVolume || 0, volume)
+        const newBestSeconds = durationSeconds
+          ? (progress.bestSeconds === null ? durationSeconds : Math.min(progress.bestSeconds, durationSeconds))
+          : progress.bestSeconds
 
         // easy 연속 카운트
         const newConsecutiveEasy = { ...state.consecutiveEasy }
@@ -99,72 +157,81 @@ export const useTrainingStore = create<TrainingState>()(
           newConsecutiveEasy[track] = 0
         }
 
-        // 세션 추가
         const daySessions = [...(state.sessions[today] || []), session]
+
+        // 프로그램 목표 달성 체크
+        const updatedPrograms = state.programs.map((p) => {
+          if (p.achieved || p.track !== track) return p
+          if (p.axis === 'volume' && newReps >= p.target) return { ...p, achieved: true, current: newReps }
+          if (p.axis === 'speed' && durationSeconds && durationSeconds <= p.target) return { ...p, achieved: true, current: durationSeconds }
+          // current 업데이트
+          if (p.axis === 'volume') return { ...p, current: newReps }
+          if (p.axis === 'speed' && durationSeconds) return { ...p, current: durationSeconds }
+          return p
+        })
 
         set({
           sessions: { ...state.sessions, [today]: daySessions },
           totalVolume: state.totalVolume + volume,
           trackProgress: {
             ...state.trackProgress,
-            [track]: { ...progress, currentReps: newReps },
+            [track]: {
+              ...progress,
+              currentReps: newReps,
+              bestVolume: newBestVolume,
+              bestSeconds: newBestSeconds,
+            },
           },
           consecutiveEasy: newConsecutiveEasy,
+          programs: updatedPrograms,
           lastWorkoutDate: today,
         })
 
-        // 레벨업 체크
-        get().checkAndLevelUp(track)
-
-        // 스트릭 갱신
         get().updateStreak()
 
-        // 랭크 재계산
         const newRank = get().calculateRank()
         if (newRank !== state.rank) {
           set({ rank: newRank })
         }
       },
 
-      checkAndLevelUp: (track) => {
+      // 수동 레벨업 (코치 제안 → 유저 수락)
+      levelUp: (track) => {
         const state = get()
         const progress = state.trackProgress[track]
-        const maxLevel = PROGRESSION_TREE[track].length - 1
-        const easyCount = state.consecutiveEasy[track]
+        const tree = getTree(state.hasPullUpBar)
+        const maxLevel = tree[track].length - 1
 
-        // 목표 렙수 도달 + easy 연속 달성 → 레벨업
-        if (
-          progress.currentReps >= LEVEL_UP_THRESHOLD.targetReps &&
-          easyCount >= LEVEL_UP_THRESHOLD.consecutiveEasy &&
-          progress.currentLevel < maxLevel
-        ) {
-          const nextExercise = PROGRESSION_TREE[track][progress.currentLevel + 1]
-          set({
-            trackProgress: {
-              ...state.trackProgress,
-              [track]: {
-                ...progress,
-                currentLevel: progress.currentLevel + 1,
-                currentReps: nextExercise.reps,
-              },
+        if (progress.currentLevel >= maxLevel) return false
+
+        const nextExercise = tree[track][progress.currentLevel + 1]
+        set({
+          trackProgress: {
+            ...state.trackProgress,
+            [track]: {
+              ...progress,
+              currentLevel: progress.currentLevel + 1,
+              currentReps: nextExercise.reps,
+              currentSets: nextExercise.sets,
+              bestVolume: 0,        // 새 동작이니 기록 리셋
+              bestSeconds: null,
             },
-            consecutiveEasy: { ...state.consecutiveEasy, [track]: 0 },
-          })
-          return true
-        }
-        return false
+          },
+          consecutiveEasy: { ...state.consecutiveEasy, [track]: 0 },
+        })
+        return true
       },
 
       calculateRank: (): HeroRank => {
         const state = get()
-        const avgLevel = (['push', 'squat', 'pull', 'core'] as TrackType[])
-          .reduce((sum, t) => sum + state.trackProgress[t].currentLevel, 0) / 4
+        // 랭크 = 사이타마 목표 달성률 기반
+        const saitamaProgress = STRENGTH_TRACKS
+          .reduce((sum, t) => sum + Math.min(1, state.trackProgress[t].currentReps / SAITAMA_GOALS[t]), 0) / STRENGTH_TRACKS.length
 
-        // 높은 랭크부터 체크
         const ranks: HeroRank[] = ['S', 'A', 'B', 'C']
         for (const rank of ranks) {
           const threshold = RANK_THRESHOLDS[rank]
-          if (state.totalVolume >= threshold.minVolume && avgLevel >= threshold.minAvgLevel) {
+          if (state.totalVolume >= threshold.minVolume && saitamaProgress >= threshold.minAvgLevel / 5) {
             return rank
           }
         }
@@ -180,10 +247,8 @@ export const useTrainingStore = create<TrainingState>()(
           set({ streakDays: 1 })
           return
         }
+        if (lastDate === today) return
 
-        if (lastDate === today) return // 이미 오늘 운동함
-
-        // 어제인지 확인
         const last = new Date(lastDate)
         const now = new Date(today)
         const diffDays = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24))
@@ -191,7 +256,7 @@ export const useTrainingStore = create<TrainingState>()(
         if (diffDays === 1) {
           set({ streakDays: state.streakDays + 1 })
         } else if (diffDays > 1) {
-          set({ streakDays: 1 }) // 리셋
+          set({ streakDays: 1 })
         }
       },
 
@@ -199,6 +264,10 @@ export const useTrainingStore = create<TrainingState>()(
         set((state) => ({
           settings: { ...state.settings, ...partial },
         })),
+
+      setHasPullUpBar: (v) => set({ hasPullUpBar: v }),
+
+      setPrograms: (programs) => set({ programs }),
 
       getTodaySessions: () => {
         const state = get()
@@ -215,12 +284,16 @@ export const useTrainingStore = create<TrainingState>()(
     {
       name: 'saitama-training',
       partialize: (state) => ({
+        onboardingCompleted: state.onboardingCompleted,
+        hasPullUpBar: state.hasPullUpBar,
+        activeTracks: state.activeTracks,
         trackProgress: state.trackProgress,
         rank: state.rank,
         totalVolume: state.totalVolume,
         streakDays: state.streakDays,
         sessions: state.sessions,
         consecutiveEasy: state.consecutiveEasy,
+        programs: state.programs,
         settings: state.settings,
         lastWorkoutDate: state.lastWorkoutDate,
       }),

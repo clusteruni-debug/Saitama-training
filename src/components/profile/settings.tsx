@@ -3,6 +3,8 @@ import { useTrainingStore } from '../../stores/useTrainingStore'
 export function Settings() {
   const settings = useTrainingStore((s) => s.settings)
   const updateSettings = useTrainingStore((s) => s.updateSettings)
+  const hasPullUpBar = useTrainingStore((s) => s.hasPullUpBar)
+  const setHasPullUpBar = useTrainingStore((s) => s.setHasPullUpBar)
 
   return (
     <div>
@@ -34,6 +36,28 @@ export function Settings() {
               +
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* 철봉 유무 */}
+      <div className="bg-[var(--color-bg-card)] rounded-xl p-4 mb-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-[var(--color-text-primary)]">철봉/풀업바</p>
+            <p className="text-xs text-[var(--color-text-secondary)]">풀 트랙 운동 변경</p>
+          </div>
+          <button
+            onClick={() => setHasPullUpBar(!hasPullUpBar)}
+            className={`w-12 h-7 rounded-full transition-colors relative ${
+              hasPullUpBar ? 'bg-[var(--color-hero-yellow)]' : 'bg-white/20'
+            }`}
+          >
+            <div
+              className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-transform ${
+                hasPullUpBar ? 'translate-x-5' : 'translate-x-0.5'
+              }`}
+            />
+          </button>
         </div>
       </div>
 

@@ -1,6 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
-  <rect width="192" height="192" rx="24" fill="#0a0a0a"/>
-  <circle cx="96" cy="80" r="45" fill="#ffc107"/>
-  <text x="96" y="95" text-anchor="middle" fill="#0a0a0a" font-size="48" font-weight="900" font-family="system-ui">S</text>
-  <text x="96" y="155" text-anchor="middle" fill="#f5f5f5" font-size="18" font-weight="700" font-family="system-ui">TRAINING</text>
+  <rect width="192" height="192" rx="40" fill="#0a0a0a"/>
+  <!-- 대머리 머리 -->
+  <ellipse cx="96" cy="78" rx="42" ry="44" fill="#ffc107"/>
+  <!-- 얼굴 -->
+  <ellipse cx="96" cy="88" rx="34" ry="34" fill="#ffe0a0"/>
+  <!-- 눈 (무표정) -->
+  <circle cx="82" cy="84" r="4" fill="#1a1a1a"/>
+  <circle cx="110" cy="84" r="4" fill="#1a1a1a"/>
+  <!-- 입 (일자) -->
+  <line x1="88" y1="98" x2="104" y2="98" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+  <!-- 빛 반사 (대머리 광택) -->
+  <ellipse cx="84" cy="62" rx="10" ry="6" fill="rgba(255,255,255,0.4)" transform="rotate(-15 84 62)"/>
+  <!-- 텍스트 -->
+  <text x="96" y="158" text-anchor="middle" fill="#ffc107" font-size="16" font-weight="900" font-family="system-ui" letter-spacing="2">SAITAMA</text>
 </svg>

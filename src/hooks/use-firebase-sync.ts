@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { onAuthStateChanged, signInWithPopup, signOut, GoogleAuthProvider } from 'firebase/auth'
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore'
-import { auth, db } from '../lib/firebase'
+import { auth, db, isFirebaseConfigured } from '../lib/firebase'
 import { useAuthStore } from '../stores/useAuthStore'
 import { useTrainingStore } from '../stores/useTrainingStore'
 import { showToast } from '../components/ui/toast'
@@ -15,8 +15,13 @@ export function useFirebaseSync() {
   const lastOwnWriteRef = useRef(0)
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // 인증 상태 감지
+  // Firebase 미설정 시 오프라인 모드
   useEffect(() => {
+    if (!isFirebaseConfigured || !auth) {
+      setSyncStatus('offline')
+      return
+    }
+
     const unsub = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser)
       if (firebaseUser) {
@@ -31,7 +36,7 @@ export function useFirebaseSync() {
 
   // Firestore 실시간 구독
   useEffect(() => {
-    if (!user) return
+    if (!user || !db) return
 
     const docRef = doc(db, 'users', user.uid)
     const unsub = onSnapshot(docRef, (snapshot) => {
@@ -55,7 +60,7 @@ export function useFirebaseSync() {
 
   // 로컬 상태 변경 시 클라우드에 반영 (디바운스)
   useEffect(() => {
-    if (!user) return
+    if (!user || !db) return
 
     const unsub = useTrainingStore.subscribe(() => {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
@@ -68,6 +73,7 @@ export function useFirebaseSync() {
   }, [user])
 
   async function loadFromFirebase(uid: string) {
+    if (!db) return
     try {
       const docRef = doc(db, 'users', uid)
       const snapshot = await getDoc(docRef)
@@ -86,16 +92,18 @@ export function useFirebaseSync() {
   function mergeFromCloud(data: Record<string, unknown>) {
     const store = useTrainingStore.getState()
 
-    // 클라우드 데이터가 더 최신이면 병합
     if (data.trackProgress) {
-      store.setTrackProgress('push', (data.trackProgress as Record<string, typeof store.trackProgress.push>).push || store.trackProgress.push)
-      store.setTrackProgress('squat', (data.trackProgress as Record<string, typeof store.trackProgress.squat>).squat || store.trackProgress.squat)
-      store.setTrackProgress('pull', (data.trackProgress as Record<string, typeof store.trackProgress.pull>).pull || store.trackProgress.pull)
-      store.setTrackProgress('core', (data.trackProgress as Record<string, typeof store.trackProgress.core>).core || store.trackProgress.core)
+      const tp = data.trackProgress as Record<string, typeof store.trackProgress.push>
+      if (tp.push) store.setTrackProgress('push', tp.push)
+      if (tp.squat) store.setTrackProgress('squat', tp.squat)
+      if (tp.pull) store.setTrackProgress('pull', tp.pull)
+      if (tp.core) store.setTrackProgress('core', tp.core)
+      if (tp.run) store.setTrackProgress('run', tp.run)
     }
   }
 
   async function syncToFirebase(uid: string) {
+    if (!db) return
     try {
       setSyncStatus('syncing')
       lastOwnWriteRef.current = Date.now()
@@ -123,6 +131,10 @@ export function useFirebaseSync() {
 }
 
 export async function loginWithGoogle() {
+  if (!auth) {
+    showToast('Firebase 미설정 — .env 파일 필요', 'error')
+    return
+  }
   try {
     const provider = new GoogleAuthProvider()
     await signInWithPopup(auth, provider)
@@ -134,6 +146,7 @@ export async function loginWithGoogle() {
 }
 
 export async function logout() {
+  if (!auth) return
   try {
     await signOut(auth)
     useAuthStore.getState().setSyncStatus('offline')

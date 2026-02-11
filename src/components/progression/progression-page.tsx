@@ -1,7 +1,7 @@
 import type { TrackType } from '../../types'
 import { TrackTree } from './track-tree'
 
-const TRACKS: TrackType[] = ['push', 'squat', 'pull', 'core']
+const TRACKS: TrackType[] = ['push', 'squat', 'pull', 'core', 'run']
 
 export function ProgressionPage() {
   return (
