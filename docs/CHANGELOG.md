@@ -1,5 +1,39 @@
 # CHANGELOG
 
+## [2026-02-11] (세션 6)
+> 📐 운동 방법론 개선 + 방법론 설명 페이지
+
+### 비율 기반 RPE 프로그레션
+- `src/data/progression-data.ts` — `RPE_DELTA` 상수 → `calculateRepsDelta()` 함수로 교체
+- 고정값(+3) 대신 비율 기반(+10%/+5%/-5%) — 렙수 스케일에 맞는 증가폭
+- 근거: Schoenfeld 2017 (주당 5-10% 증가), Helms 2016 (RPE 자동조절)
+
+### 트랙/레벨별 레벨업 기준
+- `src/data/progression-data.ts` — `LEVEL_UP_CRITERIA` 추가 (트랙 5개 × 레벨 5개)
+- 기존: 전 트랙 동일 기준(minReps: 50, consecutiveEasy: 5) → Pull 50개 비현실적
+- 변경: Pull Lv2→3은 10개+easy 4연속, Push Lv2→3은 25개+easy 3연속 등 트랙별 차등
+- 고난도 동작일수록 consecutiveEasy 높임 (4~5회) → 안전한 전환
+
+### 볼륨 캡 (레벨별 최대 렙수)
+- `src/data/progression-data.ts` — `VOLUME_CAP` 추가
+- 과도한 렙수(50+ 푸시업)는 지구력 훈련이 되므로 레벨별 상한 적용
+- `src/stores/useTrainingStore.ts` — `completeWorkout`에서 캡 적용
+
+### smart-coach 개선
+- `src/lib/smart-coach.ts` — `DIFFICULTY_UP_THRESHOLD` → `LEVEL_UP_CRITERIA` 사용
+- 프로그램 설명 "+3씩" → "+10%씩" 반영
+
+### 방법론 설명 페이지 (신규)
+- `src/components/profile/methodology-page.tsx` — 프로그레시브 오버로드, RPE 자동조절, 레벨업 기준, 볼륨 캡, 참고 문헌
+- 현재 진행률 바 포함 (렙수 + Easy 연속 횟수)
+- `src/App.tsx` — `/methodology` 라우트 추가
+- `src/components/profile/profile-page.tsx` — "운동 방법론" 링크 버튼 추가
+
+### 빌드
+- tsc + vite build 성공 확인
+
+---
+
 ## [2026-02-11] (세션 5)
 > 🔧 UI/UX 개선 + 개인화 목적 설정 + 향후 플랜
 

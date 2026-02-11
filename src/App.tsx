@@ -8,6 +8,7 @@ import { WorkoutPage } from './components/training/workout-page'
 import { ProgressionPage } from './components/progression/progression-page'
 import { StatsPage } from './components/stats/stats-page'
 import { ProfilePage } from './components/profile/profile-page'
+import { MethodologyPage } from './components/profile/methodology-page'
 import { RankUpModal } from './components/rank/rank-up-modal'
 import { useTrainingStore } from './stores/useTrainingStore'
 import { useFirebaseSync } from './hooks/use-firebase-sync'
@@ -47,6 +48,7 @@ function App() {
           <Route path="/progression" element={<ProgressionPage />} />
           <Route path="/stats" element={<StatsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/methodology" element={<MethodologyPage />} />
         </Routes>
         <BottomNav />
         <ToastContainer />

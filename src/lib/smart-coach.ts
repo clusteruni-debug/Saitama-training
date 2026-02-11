@@ -1,5 +1,5 @@
 import type { TrackType, WorkoutSession, TrackProgress, ProgramGoal } from '../types'
-import { STRENGTH_TRACKS, TRACK_INFO, SAITAMA_GOALS, DIFFICULTY_UP_THRESHOLD } from '../data/progression-data'
+import { STRENGTH_TRACKS, TRACK_INFO, SAITAMA_GOALS, LEVEL_UP_CRITERIA } from '../data/progression-data'
 
 // ─── 스마트 코치: 3축 프로그레션 프로그램 생성 ────────────────
 
@@ -45,7 +45,7 @@ export function generatePrograms(input: AnalysisInput): ProgramGoal[] {
         track,
         axis: 'volume',
         title: `${info.label} ${nextVolumeTarget}${track === 'run' ? '분' : '개'} 도전`,
-        description: `현재 ${progress.currentReps} → ${nextVolumeTarget}으로! RPE easy를 받으면 +3씩 올라가요.`,
+        description: `현재 ${progress.currentReps} → ${nextVolumeTarget}으로! RPE easy를 받으면 +10%씩 올라가요.`,
         target: nextVolumeTarget,
         current: progress.currentReps,
         achieved: false,
@@ -106,13 +106,15 @@ function getNextVolumeTarget(current: number, saitamaGoal: number): number {
 export function generateCoachTips(input: AnalysisInput): CoachTip[] {
   const tips: CoachTip[] = []
 
-  // 1. 난이도 레벨업 제안
+  // 1. 난이도 레벨업 제안 (트랙/레벨별 기준)
   for (const track of input.activeTracks) {
     const progress = input.trackProgress[track]
     const easyCount = input.consecutiveEasy[track] || 0
+    const criteria = LEVEL_UP_CRITERIA[track]?.[progress.currentLevel]
     if (
-      progress.currentReps >= DIFFICULTY_UP_THRESHOLD.minReps &&
-      easyCount >= DIFFICULTY_UP_THRESHOLD.consecutiveEasy &&
+      criteria &&
+      progress.currentReps >= criteria.minReps &&
+      easyCount >= criteria.consecutiveEasy &&
       progress.currentLevel < 5
     ) {
       const info = TRACK_INFO[track]

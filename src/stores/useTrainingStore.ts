@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { TrackType, RPEFeedback, WorkoutSession, TrackProgress, HeroRank, Settings, ProgramGoal, TrackGoal, TrainingPurpose } from '../types'
-import { RPE_DELTA, RANK_THRESHOLDS, getTree, STRENGTH_TRACKS, SAITAMA_GOALS } from '../data/progression-data'
+import { calculateRepsDelta, VOLUME_CAP, RANK_THRESHOLDS, getTree, STRENGTH_TRACKS, SAITAMA_GOALS } from '../data/progression-data'
 
 // 날짜 유틸
 function getLocalDateStr(): string {
@@ -173,9 +173,10 @@ export const useTrainingStore = create<TrainingState>()(
           createdAt: new Date().toISOString(),
         }
 
-        // 3축 프로그레션: 볼륨 우선 증가
-        const delta = RPE_DELTA[rpe]
-        const newReps = Math.max(1, progress.currentReps + delta)
+        // 3축 프로그레션: 비율 기반 볼륨 조절 (Schoenfeld 2017, Helms 2016)
+        const delta = calculateRepsDelta(progress.currentReps, rpe)
+        const cap = VOLUME_CAP[track]?.[progress.currentLevel] ?? 100
+        const newReps = Math.min(Math.max(1, progress.currentReps + delta), cap)
 
         // 개인 최고 기록 갱신
         const newBestVolume = Math.max(progress.bestVolume || 0, volume)

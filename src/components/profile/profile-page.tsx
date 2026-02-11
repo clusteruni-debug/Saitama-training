@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { TrainingPurpose } from '../../types'
 import { useTrainingStore } from '../../stores/useTrainingStore'
 import { useAuthStore } from '../../stores/useAuthStore'
@@ -35,6 +36,7 @@ export function ProfilePage() {
   const setTargetDate = useTrainingStore((s) => s.setTargetDate)
   const syncStatus = useAuthStore((s) => s.syncStatus)
   const statusInfo = syncStatusLabels[syncStatus]
+  const navigate = useNavigate()
 
   const [editingProfile, setEditingProfile] = useState(false)
   const [tempNickname, setTempNickname] = useState(nickname)
@@ -181,6 +183,23 @@ export function ProfilePage() {
           </span>
         </div>
         <LoginButton />
+      </div>
+
+      {/* 운동 방법론 */}
+      <div className="bg-[var(--color-bg-card)] rounded-2xl p-4 mb-6">
+        <button
+          onClick={() => navigate('/methodology')}
+          className="w-full flex items-center justify-between py-2"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-lg">📖</span>
+            <div className="text-left">
+              <p className="text-sm font-medium text-[var(--color-text-primary)]">운동 방법론</p>
+              <p className="text-xs text-[var(--color-text-tertiary)]">프로그레션 원리, 레벨업 기준, 참고 문헌</p>
+            </div>
+          </div>
+          <span className="text-[var(--color-text-tertiary)]">&rsaquo;</span>
+        </button>
       </div>
 
       {/* 설정 */}

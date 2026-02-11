@@ -1,4 +1,4 @@
-import type { TrackType, Exercise, HeroRank } from '../types'
+import type { TrackType, Exercise, HeroRank, RPEFeedback } from '../types'
 
 // 단순하고 기초적인 동작만. 누구나 아는 운동.
 // 프로그레션 = 같은 계열 동작의 난이도만 올림.
@@ -76,7 +76,19 @@ export const PROGRESSION_TREE_HOME: Record<TrackType, Exercise[]> = {
   run: RUN_TRACK,
 }
 
-// 볼륨 프로그레션: RPE별 렙 증가량
+// 볼륨 프로그레션: RPE별 비율 기반 렙 조절
+// 운동과학: 주당 볼륨 증가 5-10% 권장 (Schoenfeld 2017)
+// RPE 기반 자동조절 (Helms et al. 2016)
+const RPE_RATIOS = { easy: 0.10, moderate: 0.05, hard: -0.05 } as const
+
+export function calculateRepsDelta(currentReps: number, rpe: RPEFeedback): number {
+  const delta = Math.round(currentReps * RPE_RATIOS[rpe])
+  // 최소 ±1 보장 (0 방지)
+  if (rpe === 'hard') return Math.min(-1, delta)
+  return Math.max(1, delta)
+}
+
+// 레거시 호환용 — 이전 코드에서 참조하는 곳 있을 수 있음
 export const RPE_DELTA = { easy: 3, moderate: 1, hard: -1 } as const
 
 // 사이타마 최종 목표 (각 트랙 목표 렙수/분)
@@ -88,8 +100,60 @@ export const SAITAMA_GOALS: Record<TrackType, number> = {
   run: 60,     // 60분 (약 10km)
 }
 
-// 난이도 레벨업 제안 기준 (렙수 + easy 연속)
+// 난이도 레벨업 제안 기준 (레거시 — 전체 동일)
 export const DIFFICULTY_UP_THRESHOLD = { minReps: 50, consecutiveEasy: 5 }
+
+// 트랙/레벨별 레벨업 기준 (운동과학 기반)
+// Convict Conditioning (Paul Wade) — 동작별 마스터리 기준 참고
+// 고난도 동작일수록 consecutiveEasy 높임 (안전한 전환)
+export const LEVEL_UP_CRITERIA: Record<TrackType, { minReps: number; consecutiveEasy: number }[]> = {
+  push: [
+    { minReps: 20, consecutiveEasy: 3 },  // Lv0→1: 벽 푸시업 20개 + easy 3연속
+    { minReps: 25, consecutiveEasy: 3 },  // Lv1→2: 무릎 푸시업 25개
+    { minReps: 25, consecutiveEasy: 3 },  // Lv2→3: 푸시업 25개
+    { minReps: 20, consecutiveEasy: 4 },  // Lv3→4: 와이드 20개
+    { minReps: 15, consecutiveEasy: 5 },  // Lv4→5: 다이아몬드 15개 (고난도)
+  ],
+  squat: [
+    { minReps: 20, consecutiveEasy: 3 },
+    { minReps: 25, consecutiveEasy: 3 },
+    { minReps: 20, consecutiveEasy: 3 },
+    { minReps: 20, consecutiveEasy: 4 },
+    { minReps: 15, consecutiveEasy: 5 },
+  ],
+  pull: [
+    { minReps: 20, consecutiveEasy: 3 },  // 매달리기/엎드려 20초/개
+    { minReps: 10, consecutiveEasy: 3 },  // 네거티브 10개
+    { minReps: 10, consecutiveEasy: 4 },  // 친업 10개 (상당한 근력)
+    { minReps: 10, consecutiveEasy: 4 },  // 풀업 10개
+    { minReps: 8, consecutiveEasy: 5 },   // 와이드 풀업 8개 (고난도)
+  ],
+  core: [
+    { minReps: 45, consecutiveEasy: 3 },  // 플랭크 45초
+    { minReps: 25, consecutiveEasy: 3 },  // 크런치 25개
+    { minReps: 15, consecutiveEasy: 3 },  // 레그레이즈 15개
+    { minReps: 30, consecutiveEasy: 4 },  // 마운틴 클라이머 30개
+    { minReps: 15, consecutiveEasy: 5 },  // V-up 15개
+  ],
+  run: [
+    { minReps: 15, consecutiveEasy: 3 },  // 걷기 15분
+    { minReps: 20, consecutiveEasy: 3 },  // 걷기+조깅 20분
+    { minReps: 25, consecutiveEasy: 3 },  // 가벼운 조깅 25분
+    { minReps: 30, consecutiveEasy: 3 },  // 조깅 30분
+    { minReps: 40, consecutiveEasy: 4 },  // 달리기 40분
+  ],
+}
+
+// 볼륨 캡 — 레벨별 최대 렙수
+// 과도한 렙수는 근비대/근력보다 지구력 훈련이 됨
+// 적절한 시점에 레벨을 올리는 것이 프로그레시브 오버로드의 핵심
+export const VOLUME_CAP: Record<TrackType, number[]> = {
+  push:  [30, 35, 40, 30, 25, 100],
+  squat: [30, 35, 35, 30, 25, 100],
+  pull:  [30, 15, 15, 15, 12, 50],
+  core:  [60, 35, 25, 40, 20, 100],
+  run:   [20, 25, 30, 35, 45, 60],
+}
 
 export const RANK_THRESHOLDS: Record<HeroRank, { minVolume: number; minAvgLevel: number }> = {
   C: { minVolume: 0, minAvgLevel: 0 },
