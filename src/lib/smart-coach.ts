@@ -1,11 +1,12 @@
 import type { TrackType, WorkoutSession, TrackProgress, ProgramGoal } from '../types'
-import { STRENGTH_TRACKS, TRACK_INFO, SAITAMA_GOALS, LEVEL_UP_CRITERIA } from '../data/progression-data'
+import { STRENGTH_TRACKS, TRACK_INFO, SAITAMA_GOALS, LEVEL_UP_CRITERIA, VOLUME_CAP } from '../data/progression-data'
 
 // ─── 스마트 코치: 3축 프로그레션 프로그램 생성 ────────────────
 
 // 홈 화면에 표시되는 코치 메시지
 export interface CoachTip {
   type: 'program' | 'personal-best' | 'streak' | 'saitama' | 'level-up-suggest'
+    | 'deload-suggest' | 'overtraining-warning' | 'plateau-warning'
   message: string
   track?: TrackType
   action?: 'level-up' // UI에서 레벨업 버튼 표시
@@ -189,7 +190,77 @@ export function generateCoachTips(input: AnalysisInput): CoachTip[] {
     })
   }
 
-  // 6. 트랙 밸런스
+  // 6. 과훈련 경고 — 최근 5세션 중 hard 3회 이상
+  const recent5 = getRecentSessions(input.sessions, 5)
+  if (recent5.length >= 3) {
+    const hardCount = recent5.filter((s) => s.rpe === 'hard').length
+    const recent3 = getRecentSessions(input.sessions, 3)
+    const recent3AllHard = recent3.length >= 3 && recent3.every((s) => s.rpe === 'hard')
+
+    if (recent3AllHard) {
+      tips.push({
+        type: 'overtraining-warning',
+        message: '⚠️ 최근 3세션 연속 "힘들었다"! 과훈련 징후예요. 하루 쉬거나 볼륨을 줄이세요.',
+        priority: 11,
+      })
+    } else if (hardCount >= 3) {
+      tips.push({
+        type: 'overtraining-warning',
+        message: '⚠️ 최근 5세션 중 3회 이상 "힘들었다". 피로가 쌓이고 있어요.',
+        priority: 9,
+      })
+    }
+  }
+
+  // 7. 디로드 주기 제안 — 14일 이상 연속 운동 + hard 비율 > 30%
+  // 근거: Schoenfeld & Grgic (2019) — 3~4주마다 디로드 권장
+  const recent21 = getRecentSessions(input.sessions, 21)
+  if (recent21.length >= 14) {
+    const hardRatio = recent21.filter((s) => s.rpe === 'hard').length / recent21.length
+    const easyRatio = recent21.filter((s) => s.rpe === 'easy').length / recent21.length
+
+    if (hardRatio > 0.3 || easyRatio < 0.2) {
+      tips.push({
+        type: 'deload-suggest',
+        message: '💛 이번 주는 가볍게! 디로드 주간을 추천해요. 평소 볼륨의 50%로 회복하세요.',
+        priority: 10,
+      })
+    }
+  }
+
+  // 8. 정체 감지 — 같은 레벨 14일 이상 + moderate만 반복 또는 볼륨 캡 도달
+  for (const track of input.activeTracks) {
+    const progress = input.trackProgress[track]
+    const trackSessions14 = getRecentSessions(input.sessions, 14).filter((s) => s.track === track)
+    const cap = VOLUME_CAP[track]?.[progress.currentLevel] ?? 100
+    const info = TRACK_INFO[track]
+
+    // 볼륨 캡 도달했는데 레벨업 안 함
+    if (progress.currentReps >= cap && progress.currentLevel < 5) {
+      tips.push({
+        type: 'plateau-warning',
+        message: `${info.emoji} ${info.label}: 볼륨 캡(${cap})에 도달! 다음 동작으로 레벨업하세요.`,
+        track,
+        action: 'level-up',
+        priority: 10,
+      })
+    }
+    // 14일간 세션 있는데 moderate만 반복 (성장 정체)
+    else if (
+      trackSessions14.length >= 5 &&
+      trackSessions14.every((s) => s.rpe === 'moderate') &&
+      progress.currentLevel < 5
+    ) {
+      tips.push({
+        type: 'plateau-warning',
+        message: `${info.emoji} ${info.label}: 계속 "적당하다"만 나와요. 자세를 점검하거나 강도를 높여보세요.`,
+        track,
+        priority: 7,
+      })
+    }
+  }
+
+  // 9. 트랙 밸런스
   const recentWeek = getRecentSessions(input.sessions, 7)
   if (recentWeek.length >= 3) {
     const trackCounts: Partial<Record<TrackType, number>> = {}
@@ -206,7 +277,7 @@ export function generateCoachTips(input: AnalysisInput): CoachTip[] {
     }
   }
 
-  return tips.sort((a, b) => b.priority - a.priority).slice(0, 3)
+  return tips.sort((a, b) => b.priority - a.priority).slice(0, 5)
 }
 
 // ─── 사이타마 진행률 ─────────────────────────────────────
@@ -222,6 +293,16 @@ export function getSaitamaProgress(
     return sum + Math.min(1, current / target)
   }, 0)
   return Math.round((total / tracks.length) * 100)
+}
+
+// ─── 스마트 휴식 시간 (NSCA 가이드라인) ───────────────────
+// 근력(1-5 reps): 120-180초, 근비대(6-12): 60-90초, 근지구력(13+): 30-60초
+
+export function suggestRestSeconds(reps: number, _track: TrackType): number {
+  if (reps <= 5) return 120
+  if (reps <= 12) return 75
+  if (reps <= 20) return 60
+  return 45
 }
 
 // ─── 유틸 ─────────────────────────────────────────────────

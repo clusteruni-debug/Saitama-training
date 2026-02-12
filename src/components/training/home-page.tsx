@@ -187,6 +187,31 @@ export function HomePage() {
         </section>
       )}
 
+      {/* 디로드/과훈련 배너 */}
+      {coachTips.some((t) => t.type === 'overtraining-warning' || t.type === 'deload-suggest') && (
+        <section className="mb-4">
+          {coachTips
+            .filter((t) => t.type === 'overtraining-warning' || t.type === 'deload-suggest')
+            .slice(0, 1)
+            .map((tip, i) => (
+              <div
+                key={i}
+                className={`rounded-xl px-4 py-3 border ${
+                  tip.type === 'overtraining-warning'
+                    ? 'bg-red-500/10 border-red-500/30'
+                    : 'bg-yellow-500/10 border-yellow-500/30'
+                }`}
+              >
+                <p className={`text-sm font-medium ${
+                  tip.type === 'overtraining-warning' ? 'text-red-400' : 'text-yellow-400'
+                }`}>
+                  {tip.message}
+                </p>
+              </div>
+            ))}
+        </section>
+      )}
+
       {/* 오늘의 트레이닝 */}
       <section>
         <div className="flex items-center justify-between mb-3">

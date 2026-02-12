@@ -1,14 +1,27 @@
-import { useState, useEffect, useRef } from 'react'
-import { useTrainingStore } from '../../stores/useTrainingStore'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import type { TrackType } from '../../types'
+import { suggestRestSeconds } from '../../lib/smart-coach'
 
 interface RestTimerProps {
   onFinish: () => void
+  targetReps: number
+  track: TrackType
 }
 
-export function RestTimer({ onFinish }: RestTimerProps) {
-  const restSeconds = useTrainingStore((s) => s.settings.restTimerSeconds)
-  const [remaining, setRemaining] = useState(restSeconds)
+export function RestTimer({ onFinish, targetReps, track }: RestTimerProps) {
+  const suggestedSeconds = suggestRestSeconds(targetReps, track)
+  const [totalSeconds, setTotalSeconds] = useState(suggestedSeconds)
+  const [remaining, setRemaining] = useState(suggestedSeconds)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // ±15초 조절
+  const adjust = useCallback((delta: number) => {
+    setTotalSeconds((prev) => {
+      const next = Math.max(15, Math.min(300, prev + delta))
+      setRemaining((r) => Math.max(0, r + delta))
+      return next
+    })
+  }, [])
 
   useEffect(() => {
     intervalRef.current = setInterval(() => {
@@ -27,7 +40,14 @@ export function RestTimer({ onFinish }: RestTimerProps) {
     }
   }, [onFinish])
 
-  const progress = ((restSeconds - remaining) / restSeconds) * 100
+  const progress = ((totalSeconds - remaining) / totalSeconds) * 100
+
+  // 렙수 기반 가이드 메시지
+  const guideMessage = targetReps <= 5
+    ? '근력 운동은 충분히 쉬세요'
+    : targetReps <= 12
+      ? '근비대 범위 — 적당한 휴식'
+      : '고반복은 짧게 쉬어도 OK'
 
   return (
     <div className="flex flex-col items-center gap-6 py-8">
@@ -52,6 +72,29 @@ export function RestTimer({ onFinish }: RestTimerProps) {
           {remaining}
         </p>
       </div>
+
+      {/* ±15초 조절 버튼 */}
+      <div className="flex items-center gap-4">
+        <button
+          onClick={() => adjust(-15)}
+          className="w-10 h-10 rounded-full bg-white/10 text-[var(--color-text-secondary)] text-sm font-bold active:scale-90 transition-transform"
+        >
+          -15
+        </button>
+        <span className="text-xs text-[var(--color-text-tertiary)]">
+          {totalSeconds}초
+        </span>
+        <button
+          onClick={() => adjust(15)}
+          className="w-10 h-10 rounded-full bg-white/10 text-[var(--color-text-secondary)] text-sm font-bold active:scale-90 transition-transform"
+        >
+          +15
+        </button>
+      </div>
+
+      <p className="text-[10px] text-[var(--color-text-tertiary)]">
+        {guideMessage}
+      </p>
 
       <button
         onClick={onFinish}

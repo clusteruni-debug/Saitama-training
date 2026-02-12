@@ -9,7 +9,7 @@ import { RestTimer } from './rest-timer'
 import { RPEFeedback } from './rpe-feedback'
 import { showToast } from '../ui/toast'
 
-type Phase = 'exercise' | 'rest' | 'rpe' | 'done'
+type Phase = 'warmup' | 'exercise' | 'rest' | 'rpe' | 'done'
 
 export function WorkoutPage() {
   const { track } = useParams<{ track: string }>()
@@ -29,12 +29,17 @@ export function WorkoutPage() {
   const startTimeRef = useRef(Date.now())
 
   const [currentSet, setCurrentSet] = useState(0)
-  const [phase, setPhase] = useState<Phase>('exercise')
+  const [phase, setPhase] = useState<Phase>('warmup')
   const [setResults, setSetResults] = useState<{ reps: number; completed: boolean }[]>([])
 
   const totalSets = progress.currentSets
 
   const getDuration = () => Math.round((Date.now() - startTimeRef.current) / 1000)
+
+  const handleWarmupDone = useCallback(() => {
+    startTimeRef.current = Date.now()
+    setPhase('exercise')
+  }, [])
 
   const handleRepComplete = useCallback((actualReps: number) => {
     const newResults = [...setResults, { reps: actualReps, completed: true }]
@@ -52,20 +57,19 @@ export function WorkoutPage() {
     setPhase('exercise')
   }, [])
 
-  const handleRPE = useCallback((rpe: RPEType) => {
+  const handleRPE = useCallback((rpe: RPEType, formBroken?: boolean) => {
     const duration = getDuration()
-    completeWorkout(trackType, setResults, rpe, duration)
+    completeWorkout(trackType, setResults, rpe, duration, formBroken)
     setPhase('done')
     showToast(`${info.label} 운동 완료!`, 'success')
     setTimeout(() => navigate('/'), 1200)
   }, [trackType, setResults, completeWorkout, info.label, navigate])
 
   // 달리기 전용 완료
-  const handleRunRPE = useCallback((rpe: RPEType) => {
+  const handleRunRPE = useCallback((rpe: RPEType, formBroken?: boolean) => {
     const duration = getDuration()
-    // 달리기: 1세트, 렙 = 실제 달린 분
     const actualMinutes = Math.round(duration / 60)
-    completeWorkout(trackType, [{ reps: actualMinutes, completed: true }], rpe, duration)
+    completeWorkout(trackType, [{ reps: actualMinutes, completed: true }], rpe, duration, formBroken)
     setPhase('done')
     showToast(`${info.label} 완료! ${actualMinutes}분`, 'success')
     setTimeout(() => navigate('/'), 1200)
@@ -86,6 +90,7 @@ export function WorkoutPage() {
         phase={phase}
         setPhase={setPhase}
         onRPE={handleRunRPE}
+        onWarmupDone={handleWarmupDone}
         navigate={navigate}
       />
     )
@@ -94,6 +99,9 @@ export function WorkoutPage() {
   // 진행률 계산
   const completedSets = setResults.length
   const progressPct = totalSets > 0 ? Math.round((completedSets / totalSets) * 100) : 0
+
+  // 워밍업 렙수 (50%)
+  const warmupReps = Math.max(1, Math.round(progress.currentReps * 0.5))
 
   return (
     <div className="min-h-dvh flex flex-col px-4 py-6 max-w-lg mx-auto">
@@ -143,6 +151,35 @@ export function WorkoutPage() {
 
       {/* 메인 영역 */}
       <div className="flex-1 flex flex-col items-center justify-center">
+        {phase === 'warmup' && (
+          <div className="flex flex-col items-center gap-6 py-8 animate-fade-in">
+            <div className="w-16 h-16 rounded-full bg-[var(--color-hero-yellow)]/20 flex items-center justify-center">
+              <span className="text-3xl">🔥</span>
+            </div>
+            <h2 className="text-xl font-bold text-[var(--color-text-primary)]">워밍업</h2>
+            <p className="text-sm text-[var(--color-text-secondary)] text-center leading-relaxed">
+              가벼운 <span className="text-[var(--color-hero-yellow)] font-bold">{warmupReps}{timeBased ? '초' : '회'}</span>로 몸을 풀어요
+            </p>
+            <p className="text-[10px] text-[var(--color-text-tertiary)]">
+              부상 방지 + 퍼포먼스 향상
+            </p>
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={handleWarmupDone}
+                className="flex-1 py-3 rounded-2xl bg-[var(--color-hero-yellow)] text-black font-bold text-sm active:scale-[0.97] transition-transform"
+              >
+                워밍업 완료
+              </button>
+              <button
+                onClick={handleWarmupDone}
+                className="px-6 py-3 rounded-2xl bg-white/10 text-[var(--color-text-secondary)] font-medium text-sm active:scale-[0.97] transition-transform"
+              >
+                건너뛰기
+              </button>
+            </div>
+          </div>
+        )}
+
         {phase === 'exercise' && (
           <RepCounter
             key={`set-${currentSet}`}
@@ -154,18 +191,31 @@ export function WorkoutPage() {
 
         {phase === 'rest' && (
           <div className="w-full flex flex-col items-center gap-4">
-            {/* 이전 세트 결과 */}
+            {/* 전체 세트 결과 리스트 */}
             {setResults.length > 0 && (
-              <p className="text-sm text-[var(--color-hero-yellow)] font-medium">
-                {setResults.length}세트 완료! {timeBased ? `${setResults[setResults.length - 1].reps}초` : `${setResults[setResults.length - 1].reps}회`} 수행
-              </p>
+              <div className="w-full bg-[var(--color-bg-card)] rounded-xl p-3 mb-2">
+                {setResults.map((r, i) => (
+                  <div key={i} className="flex items-center gap-2 py-1">
+                    <span className="text-green-400 text-xs">✓</span>
+                    <span className="text-sm text-[var(--color-text-primary)]">
+                      {i + 1}세트: {timeBased ? `${r.reps}초` : `${r.reps}회`}
+                    </span>
+                  </div>
+                ))}
+                <div className="flex items-center gap-2 py-1">
+                  <span className="text-[var(--color-hero-yellow)] text-xs">→</span>
+                  <span className="text-sm text-[var(--color-text-secondary)]">
+                    {setResults.length + 1}세트 대기 중
+                  </span>
+                </div>
+              </div>
             )}
-            <RestTimer onFinish={handleRestFinish} />
+            <RestTimer onFinish={handleRestFinish} targetReps={progress.currentReps} track={trackType} />
           </div>
         )}
 
         {phase === 'rpe' && (
-          <RPEFeedback onSelect={handleRPE} />
+          <RPEFeedback onSelect={handleRPE} currentReps={progress.currentReps} />
         )}
 
         {phase === 'done' && (
@@ -216,14 +266,16 @@ interface RunWorkoutProps {
   targetMinutes: number
   phase: Phase
   setPhase: (p: Phase) => void
-  onRPE: (rpe: RPEType) => void
+  onRPE: (rpe: RPEType, formBroken?: boolean) => void
+  onWarmupDone: () => void
   navigate: (path: string) => void
 }
 
-function RunWorkout({ exercise, info, targetMinutes, phase, setPhase, onRPE, navigate }: RunWorkoutProps) {
+function RunWorkout({ exercise, info, targetMinutes, phase, setPhase, onRPE, onWarmupDone, navigate }: RunWorkoutProps) {
   const [elapsed, setElapsed] = useState(0) // 초
   const [isRunning, setIsRunning] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const progress_currentReps = useTrainingStore((s) => s.trackProgress.run.currentReps)
 
   const targetSeconds = targetMinutes * 60
   const progress = Math.min(100, (elapsed / targetSeconds) * 100)
@@ -285,6 +337,32 @@ function RunWorkout({ exercise, info, targetMinutes, phase, setPhase, onRPE, nav
 
       {/* 메인 영역 */}
       <div className="flex-1 flex flex-col items-center justify-center">
+        {phase === 'warmup' && (
+          <div className="flex flex-col items-center gap-6 py-8 animate-fade-in">
+            <div className="w-16 h-16 rounded-full bg-[var(--color-hero-yellow)]/20 flex items-center justify-center">
+              <span className="text-3xl">🔥</span>
+            </div>
+            <h2 className="text-xl font-bold text-[var(--color-text-primary)]">워밍업</h2>
+            <p className="text-sm text-[var(--color-text-secondary)] text-center leading-relaxed">
+              가벼운 스트레칭과 <span className="text-[var(--color-hero-yellow)] font-bold">5분 걷기</span>로 몸을 풀어요
+            </p>
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => { onWarmupDone(); setPhase('exercise') }}
+                className="flex-1 py-3 rounded-2xl bg-[var(--color-hero-yellow)] text-black font-bold text-sm active:scale-[0.97] transition-transform"
+              >
+                워밍업 완료
+              </button>
+              <button
+                onClick={() => { onWarmupDone(); setPhase('exercise') }}
+                className="px-6 py-3 rounded-2xl bg-white/10 text-[var(--color-text-secondary)] font-medium text-sm active:scale-[0.97] transition-transform"
+              >
+                건너뛰기
+              </button>
+            </div>
+          </div>
+        )}
+
         {phase === 'exercise' && (
           <div className="flex flex-col items-center gap-6">
             {/* 큰 원형 타이머 */}
@@ -332,7 +410,7 @@ function RunWorkout({ exercise, info, targetMinutes, phase, setPhase, onRPE, nav
                 {minutes}분 {seconds > 0 ? `${seconds}초` : ''} 달렸어요!
               </p>
             </div>
-            <RPEFeedback onSelect={onRPE} />
+            <RPEFeedback onSelect={onRPE} currentReps={progress_currentReps} />
           </div>
         )}
 

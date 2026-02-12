@@ -1,5 +1,5 @@
 import type { TrackType, WorkoutSession, TrackGoal } from '../types'
-import { RPE_DELTA } from '../data/progression-data'
+import { calculateRepsDelta } from '../data/progression-data'
 
 // ─── 플랜 계산기: 목표까지의 로드맵 생성 ─────────────────
 
@@ -49,9 +49,11 @@ export function analyzeRPERatio(
   }
 }
 
-// 세션당 평균 렙 증가량 계산
-function calcAvgGain(ratio: { easy: number; moderate: number; hard: number }): number {
-  return ratio.easy * RPE_DELTA.easy + ratio.moderate * RPE_DELTA.moderate + ratio.hard * RPE_DELTA.hard
+// 세션당 평균 렙 증가량 계산 (비율 기반 — 현재 렙수 반영)
+function calcAvgGain(ratio: { easy: number; moderate: number; hard: number }, currentReps: number): number {
+  return ratio.easy * calculateRepsDelta(currentReps, 'easy')
+       + ratio.moderate * calculateRepsDelta(currentReps, 'moderate')
+       + ratio.hard * calculateRepsDelta(currentReps, 'hard')
 }
 
 // 마일스톤 정의
@@ -81,7 +83,7 @@ export function calculatePlan(
 ): TrackPlan {
   const targetReps = goal.targetReps
   const daysPerWeek = goal.daysPerWeek
-  const avgGain = calcAvgGain(rpeRatio)
+  const avgGain = calcAvgGain(rpeRatio, currentReps)
 
   // 이미 달성
   if (currentReps >= targetReps) {
@@ -110,7 +112,9 @@ export function calculatePlan(
     const sessionsThisWeek = Math.min(daysPerWeek, 7)
 
     for (let s = 0; s < sessionsThisWeek && reps < targetReps; s++) {
-      reps = Math.min(targetReps, reps + avgGain)
+      // 비율 기반이라 현재 렙수에 따라 증가량이 달라짐
+      const gain = calcAvgGain(rpeRatio, Math.round(reps))
+      reps = Math.min(targetReps, reps + gain)
       totalSessions++
     }
 

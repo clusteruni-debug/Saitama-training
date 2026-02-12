@@ -54,7 +54,7 @@ interface TrainingState {
   setTargetDate: (date: string | null) => void
   setTrackProgress: (track: TrackType, progress: TrackProgress) => void
   toggleActiveTrack: (track: TrackType) => void
-  completeWorkout: (track: TrackType, sets: { reps: number; completed: boolean }[], rpe: RPEFeedback, durationSeconds?: number) => void
+  completeWorkout: (track: TrackType, sets: { reps: number; completed: boolean }[], rpe: RPEFeedback, durationSeconds?: number, formBroken?: boolean) => void
   levelUp: (track: TrackType) => boolean
   calculateRank: () => HeroRank
   updateStreak: () => void
@@ -153,7 +153,7 @@ export const useTrainingStore = create<TrainingState>()(
           return { activeTracks: [...current, track] }
         }),
 
-      completeWorkout: (track, sets, rpe, durationSeconds) => {
+      completeWorkout: (track, sets, rpe, durationSeconds, formBroken) => {
         const state = get()
         const today = getLocalDateStr()
         const progress = state.trackProgress[track]
@@ -174,7 +174,12 @@ export const useTrainingStore = create<TrainingState>()(
         }
 
         // 3축 프로그레션: 비율 기반 볼륨 조절 (Schoenfeld 2017, Helms 2016)
-        const delta = calculateRepsDelta(progress.currentReps, rpe)
+        let delta = calculateRepsDelta(progress.currentReps, rpe)
+        // 폼 퀄리티 경고: 자세 무너짐 시 추가 -5% 적용
+        if (formBroken) {
+          const extraPenalty = Math.min(-1, Math.round(progress.currentReps * -0.05))
+          delta = delta + extraPenalty
+        }
         const cap = VOLUME_CAP[track]?.[progress.currentLevel] ?? 100
         const newReps = Math.min(Math.max(1, progress.currentReps + delta), cap)
 

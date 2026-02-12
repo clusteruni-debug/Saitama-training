@@ -198,7 +198,86 @@ export function MethodologyPage() {
         </p>
       </section>
 
-      {/* 5. 참고 문헌 */}
+      {/* 5. 디로드와 회복 */}
+      <section className="bg-[var(--color-bg-card)] rounded-2xl p-5 mb-4">
+        <h2 className="text-base font-bold text-[var(--color-text-primary)] mb-3">
+          디로드와 회복
+        </h2>
+        <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+          <span className="text-[var(--color-hero-yellow)] font-medium">3~4주마다</span> 볼륨을 50%로 줄이는
+          "디로드 주간"이 필요합니다. 계속 강하게 밀면 과훈련으로 부상이나 정체가 와요.
+        </p>
+        <div className="mt-3 bg-white/5 rounded-xl p-3">
+          <p className="text-xs font-medium text-[var(--color-text-primary)] mb-2">과훈련 증상:</p>
+          <ul className="text-xs text-[var(--color-text-secondary)] space-y-1">
+            <li>- 연속 "힘들었다" 3회 이상</li>
+            <li>- 수행 능력 저하 (렙수가 계속 줄어듦)</li>
+            <li>- 만성 피로, 수면 장애, 관절통</li>
+          </ul>
+        </div>
+        <div className="mt-3 bg-white/5 rounded-xl p-3">
+          <p className="text-xs font-medium text-[var(--color-text-primary)] mb-2">앱의 자동 감지:</p>
+          <ul className="text-xs text-[var(--color-text-secondary)] space-y-1">
+            <li>- 14일 이상 연속 + hard 비율 &gt; 30% &rarr; 디로드 권장</li>
+            <li>- 최근 3세션 연속 hard &rarr; 과훈련 경고</li>
+            <li>- 근육군별 회복 상태 표시 (24h/48h)</li>
+          </ul>
+        </div>
+      </section>
+
+      {/* 6. 스마트 휴식 시간 */}
+      <section className="bg-[var(--color-bg-card)] rounded-2xl p-5 mb-4">
+        <h2 className="text-base font-bold text-[var(--color-text-primary)] mb-3">
+          스마트 휴식 시간
+        </h2>
+        <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+          세트 간 휴식 시간은 운동 강도에 따라 달라야 합니다. NSCA 가이드라인 기반으로 자동 추천해요.
+        </p>
+        <div className="mt-4 rounded-xl overflow-hidden border border-white/10">
+          <div className="grid grid-cols-3 text-center text-xs font-medium">
+            <div className="bg-purple-500/20 text-purple-400 py-2">근력 (1-5회)</div>
+            <div className="bg-blue-500/20 text-blue-400 py-2">근비대 (6-12회)</div>
+            <div className="bg-green-500/20 text-green-400 py-2">근지구력 (13+회)</div>
+          </div>
+          <div className="grid grid-cols-3 text-center text-sm font-bold py-3 bg-white/5">
+            <div className="text-purple-400">120초</div>
+            <div className="text-blue-400">75초</div>
+            <div className="text-green-400">45-60초</div>
+          </div>
+        </div>
+        <p className="text-[10px] text-[var(--color-text-tertiary)] mt-2 text-center">
+          &plusmn;15초 버튼으로 개인 체감에 맞게 조절 가능
+        </p>
+      </section>
+
+      {/* 7. 워밍업의 중요성 */}
+      <section className="bg-[var(--color-bg-card)] rounded-2xl p-5 mb-4">
+        <h2 className="text-base font-bold text-[var(--color-text-primary)] mb-3">
+          워밍업의 중요성
+        </h2>
+        <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+          본 운동 전 <span className="text-[var(--color-hero-yellow)] font-medium">50% 강도</span>로 가볍게 몸을 풀면:
+        </p>
+        <div className="mt-3 flex flex-col gap-2">
+          <div className="flex items-start gap-2">
+            <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-medium shrink-0 mt-0.5">부상 방지</span>
+            <span className="text-sm text-[var(--color-text-secondary)]">근육과 관절이 준비됨 — 갑작스러운 부하 방지</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-medium shrink-0 mt-0.5">퍼포먼스</span>
+            <span className="text-sm text-[var(--color-text-secondary)]">체온 상승 + 혈류 증가 &rarr; 더 많은 렙수 가능</span>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full font-medium shrink-0 mt-0.5">신경 활성</span>
+            <span className="text-sm text-[var(--color-text-secondary)]">운동 패턴 리허설 &rarr; 정확한 폼 유지</span>
+          </div>
+        </div>
+        <p className="text-xs text-[var(--color-text-tertiary)] mt-3">
+          앱에서 운동 시작 전 자동으로 워밍업 안내가 표시됩니다. 건너뛰기도 가능하지만, 가능하면 해주세요!
+        </p>
+      </section>
+
+      {/* 8. 참고 문헌 */}
       <section className="bg-[var(--color-bg-card)] rounded-2xl p-5 mb-4">
         <h2 className="text-base font-bold text-[var(--color-text-primary)] mb-3">
           참고 문헌
@@ -213,8 +292,12 @@ export function MethodologyPage() {
             desc="RPE 기반 자동조절 — 주관적 난이도로 훈련 부하 조절"
           />
           <Reference
+            title="Schoenfeld & Grgic (2019)"
+            desc="디로드 타이밍: 3~4주마다 볼륨 50% 감소 권장"
+          />
+          <Reference
             title="NSCA CSCS 가이드라인"
-            desc="프로그레시브 오버로드 원칙 — 점진적 과부하"
+            desc="프로그레시브 오버로드 원칙 + 렙수별 최적 휴식 시간"
           />
           <Reference
             title="Convict Conditioning (Paul Wade)"
