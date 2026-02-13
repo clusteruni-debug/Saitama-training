@@ -1,10 +1,11 @@
-const CACHE_VERSION = 'saitama-v2'
+const CACHE_VERSION = 'saitama-v3'
+const BASE = '/Saitama-training/'
 
 // 설치 — 새 캐시 생성
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_VERSION).then((cache) =>
-      cache.addAll(['/', '/index.html'])
+      cache.addAll([BASE, BASE + 'index.html'])
     )
   )
   // 대기 중인 SW를 즉시 활성화
@@ -56,6 +57,16 @@ self.addEventListener('fetch', (event) => {
         }
         return response
       })
-      .catch(() => caches.match(event.request))
+      .catch(() =>
+        caches.match(event.request).then((cached) => {
+          // 캐시 히트 → 반환, 미스 → SPA 폴백 (index.html)
+          if (cached) return cached
+          // navigation 요청이면 index.html로 폴백 (SPA 라우팅 지원)
+          if (event.request.mode === 'navigate') {
+            return caches.match(BASE + 'index.html')
+          }
+          return cached
+        })
+      )
   )
 })

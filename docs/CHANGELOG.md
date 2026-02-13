@@ -1,5 +1,32 @@
 # CHANGELOG
 
+## [2026-02-13] (세션 8)
+> 🚀 GitHub Pages 배포 + PWA 완성 — 운영 가능 상태
+
+### GitHub Pages 배포
+- `.github/workflows/deploy.yml` — main push 시 자동 빌드 + GitHub Pages 배포
+- `vite.config.ts` — `base: '/Saitama-training/'` 추가
+- 배포 URL: https://clusteruni-debug.github.io/Saitama-training/
+
+### 경로 수정 (GitHub Pages 서브디렉토리 대응)
+- `src/App.tsx` — `BrowserRouter basename="/Saitama-training"` 추가
+- `index.html` — manifest, favicon, apple-touch-icon, SW 등록 경로 모두 `/Saitama-training/` 접두사
+- `public/manifest.json` — `start_url`, 아이콘 경로 모두 `/Saitama-training/` 접두사
+
+### PWA 강화
+- `public/sw.js` v3 — BASE 경로 반영, 오프라인 SPA 폴백 (navigate 요청 → index.html)
+- `public/icon-192.png`, `public/icon-512.png` — SVG → PNG 변환 (PWA 설치 호환성)
+- `public/manifest.json` — PNG 아이콘 항목 추가 (`purpose: "any maskable"`)
+
+### CLAUDE.md
+- 배포 URL Vercel → GitHub Pages 변경
+- 로드맵: P0/P1 전체 ✅ 완료, P2 PWA+배포 ✅ 완료
+
+### 빌드
+- tsc + vite build 성공 확인
+
+---
+
 ## [2026-02-12] (세션 7)
 > 🧠 운동 이론 강화 + UX 개선 — 디로드/과훈련/정체 감지, 스마트 휴식, 워밍업, RPE 개선
 

@@ -40,7 +40,7 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/Saitama-training">
       <div className="min-h-dvh bg-[var(--color-bg-dark)]">
         <Routes>
           <Route path="/" element={<HomePage />} />

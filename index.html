@@ -7,9 +7,9 @@
     <meta name="description" content="원펀맨 감성 프로그레시브 오버로드 홈트레이닝" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="icon" type="image/svg+xml" href="/icon-192.svg" />
-    <link rel="apple-touch-icon" href="/icon-192.svg" />
+    <link rel="manifest" href="/Saitama-training/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/Saitama-training/icon-192.svg" />
+    <link rel="apple-touch-icon" href="/Saitama-training/icon-192.png" />
     <title>Saitama Training</title>
   </head>
   <body>
@@ -18,7 +18,7 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then((reg) => {
+          navigator.serviceWorker.register('/Saitama-training/sw.js').then((reg) => {
             // 주기적으로 업데이트 확인 (1시간)
             setInterval(() => reg.update(), 60 * 60 * 1000)
           })
