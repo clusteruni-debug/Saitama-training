@@ -149,3 +149,9 @@ npm run dev               # http://localhost:5173
 | P2 | 랭크업 애니메이션 | ✅ 완료 |
 | P2 | PWA + GitHub Pages 배포 | ✅ 완료 |
 | P2 | 소셜 기능 (친구 랭킹) | 🔵 미착수 |
+
+---
+
+## 📚 LEARNED (프로젝트 교훈)
+
+- [2026-02-13] CHANGELOG는 `docs/CHANGELOG.md`에 있음 (루트 아님)
