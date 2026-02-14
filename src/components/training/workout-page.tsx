@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { TrackType, RPEFeedback as RPEType } from '../../types'
 import { useTrainingStore } from '../../stores/useTrainingStore'
@@ -299,11 +299,13 @@ function RunWorkout({ exercise, info, targetMinutes, phase, setPhase, onRPE, onW
   }
 
   // 목표 시간 도달 시 자동 완료
-  if (elapsed >= targetSeconds && isRunning) {
-    if (timerRef.current) clearInterval(timerRef.current)
-    setIsRunning(false)
-    setPhase('rpe')
-  }
+  useEffect(() => {
+    if (elapsed >= targetSeconds && isRunning) {
+      if (timerRef.current) clearInterval(timerRef.current)
+      setIsRunning(false)
+      setPhase('rpe')
+    }
+  }, [elapsed, targetSeconds, isRunning])
 
   return (
     <div className="min-h-dvh flex flex-col px-4 py-6 max-w-lg mx-auto">
