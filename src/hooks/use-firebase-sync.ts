@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { onAuthStateChanged, signInWithPopup, signOut, GoogleAuthProvider } from 'firebase/auth'
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore'
 import { auth, db, isFirebaseConfigured } from '../lib/firebase'
@@ -15,81 +15,7 @@ export function useFirebaseSync() {
   const lastOwnWriteRef = useRef(0)
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Firebase 미설정 시 오프라인 모드
-  useEffect(() => {
-    if (!isFirebaseConfigured || !auth) {
-      setSyncStatus('offline')
-      return
-    }
-
-    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser)
-      if (firebaseUser) {
-        setSyncStatus('syncing')
-        loadFromFirebase(firebaseUser.uid)
-      } else {
-        setSyncStatus('offline')
-      }
-    })
-    return () => unsub()
-  }, [setUser, setSyncStatus])
-
-  // Firestore 실시간 구독
-  useEffect(() => {
-    if (!user || !db) return
-
-    const docRef = doc(db, 'users', user.uid)
-    const unsub = onSnapshot(docRef, (snapshot) => {
-      if (!snapshot.exists()) return
-
-      // 핑퐁 방지: 자기 쓰기 직후 무시
-      if (Date.now() - lastOwnWriteRef.current < 3000) return
-
-      const data = snapshot.data()
-      if (data) {
-        mergeFromCloud(data)
-        setSyncStatus('synced')
-      }
-    }, (error) => {
-      console.error('Firestore 구독 에러:', error)
-      setSyncStatus('error')
-    })
-
-    return () => unsub()
-  }, [user, setSyncStatus])
-
-  // 로컬 상태 변경 시 클라우드에 반영 (디바운스)
-  useEffect(() => {
-    if (!user || !db) return
-
-    const unsub = useTrainingStore.subscribe(() => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
-      debounceTimerRef.current = setTimeout(() => {
-        syncToFirebase(user.uid)
-      }, DEBOUNCE_MS)
-    })
-
-    return () => unsub()
-  }, [user])
-
-  async function loadFromFirebase(uid: string) {
-    if (!db) return
-    try {
-      const docRef = doc(db, 'users', uid)
-      const snapshot = await getDoc(docRef)
-      if (snapshot.exists()) {
-        mergeFromCloud(snapshot.data())
-        showToast('클라우드 데이터 로드 완료', 'success')
-      }
-      setSyncStatus('synced')
-    } catch (error) {
-      console.error('Firebase 로드 실패:', error)
-      setSyncStatus('error')
-      showToast('동기화 실패', 'error')
-    }
-  }
-
-  function mergeFromCloud(data: Record<string, unknown>) {
+  const mergeFromCloud = useCallback((data: Record<string, unknown>) => {
     const store = useTrainingStore.getState()
     const updates: Record<string, unknown> = {}
 
@@ -125,9 +51,26 @@ export function useFirebaseSync() {
     if (Object.keys(updates).length > 0) {
       useTrainingStore.setState(updates)
     }
-  }
+  }, [])
 
-  async function syncToFirebase(uid: string) {
+  const loadFromFirebase = useCallback(async (uid: string) => {
+    if (!db) return
+    try {
+      const docRef = doc(db, 'users', uid)
+      const snapshot = await getDoc(docRef)
+      if (snapshot.exists()) {
+        mergeFromCloud(snapshot.data())
+        showToast('클라우드 데이터 로드 완료', 'success')
+      }
+      setSyncStatus('synced')
+    } catch (error) {
+      console.error('Firebase 로드 실패:', error)
+      setSyncStatus('error')
+      showToast('동기화 실패', 'error')
+    }
+  }, [mergeFromCloud, setSyncStatus])
+
+  const syncToFirebase = useCallback(async (uid: string) => {
     if (!db) return
     try {
       setSyncStatus('syncing')
@@ -159,7 +102,64 @@ export function useFirebaseSync() {
       console.error('Firebase 동기화 실패:', error)
       setSyncStatus('error')
     }
-  }
+  }, [setSyncStatus])
+
+  // Firebase 미설정 시 오프라인 모드
+  useEffect(() => {
+    if (!isFirebaseConfigured || !auth) {
+      setSyncStatus('offline')
+      return
+    }
+
+    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser)
+      if (firebaseUser) {
+        setSyncStatus('syncing')
+        loadFromFirebase(firebaseUser.uid)
+      } else {
+        setSyncStatus('offline')
+      }
+    })
+    return () => unsub()
+  }, [loadFromFirebase, setUser, setSyncStatus])
+
+  // Firestore 실시간 구독
+  useEffect(() => {
+    if (!user || !db) return
+
+    const docRef = doc(db, 'users', user.uid)
+    const unsub = onSnapshot(docRef, (snapshot) => {
+      if (!snapshot.exists()) return
+
+      // 핑퐁 방지: 자기 쓰기 직후 무시
+      if (Date.now() - lastOwnWriteRef.current < 3000) return
+
+      const data = snapshot.data()
+      if (data) {
+        mergeFromCloud(data)
+        setSyncStatus('synced')
+      }
+    }, (error) => {
+      console.error('Firestore 구독 에러:', error)
+      setSyncStatus('error')
+    })
+
+    return () => unsub()
+  }, [mergeFromCloud, setSyncStatus, user])
+
+  // 로컬 상태 변경 시 클라우드에 반영 (디바운스)
+  useEffect(() => {
+    if (!user || !db) return
+
+    const unsub = useTrainingStore.subscribe(() => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+      debounceTimerRef.current = setTimeout(() => {
+        syncToFirebase(user.uid)
+      }, DEBOUNCE_MS)
+    })
+
+    return () => unsub()
+  }, [syncToFirebase, user])
 }
 
 export async function loginWithGoogle() {
