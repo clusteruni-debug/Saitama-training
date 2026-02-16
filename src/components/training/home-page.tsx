@@ -72,6 +72,7 @@ export function HomePage() {
   }, [targetDate])
 
   // 가장 가까운 마일스톤
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const nextMilestone = useMemo(() => {
     for (const t of activeTracks) {
       const goal = trackGoals[t]

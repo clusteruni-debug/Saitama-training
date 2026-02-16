@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { TrackType, RPEFeedback as RPEType } from '../../types'
 import { useTrainingStore } from '../../stores/useTrainingStore'
@@ -26,7 +26,7 @@ export function WorkoutPage() {
   const runMode = isRunTrack(exercise.id)
 
   // 운동 시작 시간 기록 (시간 기반 목표 추적)
-  const startTimeRef = useRef(Date.now())
+  const startTimeRef = useRef(0)
 
   const [currentSet, setCurrentSet] = useState(0)
   const [phase, setPhase] = useState<Phase>('warmup')
@@ -284,9 +284,20 @@ function RunWorkout({ exercise, info, targetMinutes, phase, setPhase, onRPE, onW
 
   const handleStart = () => {
     if (isRunning) return
+    if (startTimeRef.current === 0) {
+      startTimeRef.current = Date.now()
+    }
     setIsRunning(true)
     timerRef.current = setInterval(() => {
-      setElapsed((prev) => prev + 1)
+      setElapsed((prev) => {
+        const next = prev + 1
+        if (next >= targetSeconds) {
+          if (timerRef.current) clearInterval(timerRef.current)
+          setIsRunning(false)
+          setPhase('rpe')
+        }
+        return next
+      })
     }, 1000)
   }
 
@@ -297,15 +308,6 @@ function RunWorkout({ exercise, info, targetMinutes, phase, setPhase, onRPE, onW
       setPhase('rpe')
     }
   }
-
-  // 목표 시간 도달 시 자동 완료
-  useEffect(() => {
-    if (elapsed >= targetSeconds && isRunning) {
-      if (timerRef.current) clearInterval(timerRef.current)
-      setIsRunning(false)
-      setPhase('rpe')
-    }
-  }, [elapsed, targetSeconds, isRunning])
 
   return (
     <div className="min-h-dvh flex flex-col px-4 py-6 max-w-lg mx-auto">

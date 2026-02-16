@@ -24,6 +24,7 @@ function App() {
 
   useEffect(() => {
     if (rank !== prevRankRef.current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRankUpRank(rank)
       prevRankRef.current = rank
     }
