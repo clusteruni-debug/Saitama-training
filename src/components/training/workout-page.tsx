@@ -275,6 +275,7 @@ function RunWorkout({ exercise, info, targetMinutes, phase, setPhase, onRPE, onW
   const [elapsed, setElapsed] = useState(0) // 초
   const [isRunning, setIsRunning] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const startTimeRef = useRef(0)
   const progress_currentReps = useTrainingStore((s) => s.trackProgress.run.currentReps)
 
   const targetSeconds = targetMinutes * 60
