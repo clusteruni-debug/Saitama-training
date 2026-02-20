@@ -1,188 +1,44 @@
-> ⚠️ **글로벌 규칙 적용**: 절대 규칙, 보안, Git, 능동적 작업, 구현 완결성, 영향도 분석, 디버깅, 검증, 세션 프로토콜 등 공통 규칙은 `~/.claude/CLAUDE.md` 참조. 이 파일은 **프로젝트 고유 정보만** 담습니다.
-
 # Saitama Training — 원펀 트레이닝
 
-## 📋 프로젝트
-- **이름**: Saitama Training (원펀트레이닝)
-- **스택**: React + TypeScript + Tailwind CSS v4 + Firebase
-- **배포**: GitHub Pages (https://clusteruni-debug.github.io/Saitama-training/)
-- **한 줄 설명**: 사이타마(원펀맨) 컨셉의 프로그레시브 오버로드 홈트레이닝 앱
+## 스택
+React + TypeScript + Tailwind CSS v4 + Firebase + zustand
 
----
+## 실행
+```bash
+cp .env.example .env    # Firebase 환경변수 설정
+npm install
+npm run dev             # http://localhost:5173
+```
 
-## 🎯 프로젝트 개요
+## 배포
+Vercel (git push = 자동 배포)
 
-사이타마(원펀맨) 컨셉의 홈트레이닝 앱.
-맨몸운동(푸시업, 스쿼트, 턱걸이, 코어) 4개 트랙을 중심으로,
-사용자의 수행 데이터를 기반으로 자동으로 갯수를 늘리고
-더 어려운 동작 변형으로 업그레이드해주는 **프로그레시브 오버로드 시스템**.
-
----
-
-## ⚡ 핵심 기능
-
-### 1. 운동 프로그레션 트리 (5갈래: Push / Squat / Pull / Core / Run)
-각 트랙마다 6단계(Lv0~5)의 동작 변형. 마스터하면 다음 레벨로 진급.
-Pull 트랙은 철봉 유무에 따라 자동 전환 (철봉: 매달리기→머슬업 / 맨몸: 엎드려→풀 브릿지)
-
-| 트랙 | Lv0 | Lv1 | Lv2 | Lv3 | Lv4 | Lv5 |
-|------|-----|-----|-----|-----|-----|-----|
-| **Push** | 벽 푸시업 | 무릎 푸시업 | 푸시업 | 와이드 | 다이아몬드 | 한손 |
-| **Squat** | 반 스쿼트 | 스쿼트 | 와이드 | 런지 | 점프 스쿼트 | 피스톨 |
-| **Pull(철봉)** | 매달리기 | 네거티브 풀업 | 친업 | 풀업 | 와이드 풀업 | 머슬업 |
-| **Pull(맨몸)** | 엎드려 상체들기 | 슈퍼맨 | 슈퍼맨 홀드 | 브릿지 | 한다리 브릿지 | 풀 브릿지 |
-| **Core** | 플랭크(초) | 크런치 | 레그레이즈 | 마운틴 클라이머 | V-up | 드래곤 플래그 |
-| **Run** | 걷기 | 걷기+조깅 | 가벼운 조깅 | 조깅 | 달리기 | 10km |
-
-### 2. 비율 기반 자동 볼륨 조절 (RPE 피드백)
-- 운동 후 **"쉬웠다 / 적당했다 / 힘들었다"** 3단계 피드백
-- **비율 기반** 자동 조절: easy +10% / moderate +5% / hard -5% (Schoenfeld 2017, Helms 2016)
-- 트랙/레벨별 차등 레벨업 기준 (`LEVEL_UP_CRITERIA`) + 볼륨 캡 (`VOLUME_CAP`)
-- 앱 내 `/methodology` 페이지에서 운동 방법론 + 참고 문헌 확인 가능
-
-### 3. 3축 프로그레션 + 스마트 코치
-- **볼륨**: 렙수 자동 증가 (RPE 기반)
-- **속도**: 개인 최고 시간 추적 (bestSeconds)
-- **난이도**: 코치 제안 → 유저 수락 방식 레벨업
-- 스마트 코치: 프로그램 자동 생성, 레벨업 제안, 스트릭/밸런스 팁
-
-### 4. 히어로 랭크 시스템
-- **C급** → **B급** → **A급** → **S급** 히어로
-- 사이타마 목표 달성률 + 총 볼륨 기반 랭크 결정
-- 랭크업 시 파티클 폭죽 + 글로우 링 애니메이션
-
-### 5. 오늘의 트레이닝 화면
-- 매일 들어오면 **오늘 할 운동이 바로 보임** + 닉네임 인사 + D-day
-- 세트 카운터 + 휴식 타이머 + 세트 진행률 바
-- 사이타마 전체 진행률 바 + 내 프로그램 위젯
-
-### 6. 기록/통계 대시보드
-- 주간/월간 볼륨 추이 SVG 차트 (평균 점선, Y축 눈금)
-- 트랙별 진행률 바 + 스트릭 (최고 기록, 마일스톤, 불꽃 애니메이션)
-
-### 7. 개인화 + 클라우드 동기화
-- 온보딩: 운동 목적 → 닉네임 → 장비(철봉) → 레벨 테스트
-- Firebase Auth (Google 로그인) + Firestore 실시간 동기화
-- PWA 오프라인 지원 + SW 업데이트 알림
-
----
-
-## 🎨 디자인 방향
-
-- **다크 테마 기반**, 애니메이션 감성
-- 미니멀하고 **운동 중 조작 최소화**
-- 원펀맨 느낌의 **노란색(`#ffc107`) / 빨간색(`#ef4444`)** 액센트
-- 배경: `#0a0a0a`, 카드: `#1a1a1a`
-- 모바일 퍼스트 반응형
-
----
-
-## 🏗️ 기술 규칙
-
-### 폴더 구조
+## 구조
 ```
 src/
-├── components/
-│   ├── training/      # 오늘의 트레이닝, 세트 카운터, 타이머
-│   ├── progression/   # 프로그레션 트리, 레벨업 UI
-│   ├── rank/          # 히어로 랭크, 랭크업 연출
-│   ├── stats/         # 기록, 통계, 대시보드
-│   └── ui/            # 공통 UI (버튼, 카드, 모달 등)
-├── stores/            # zustand 스토어
-├── lib/               # firebase 클라이언트, 유틸리티
-├── types/             # TypeScript 타입 정의
-├── hooks/             # 커스텀 훅
-└── docs/
-    └── CHANGELOG.md
+├── components/         # training/, progression/, rank/, stats/, ui/
+├── stores/             # zustand 스토어 (기능별 분리)
+├── lib/                # firebase.ts, smart-coach.ts, plan-calculator.ts
+├── types/              # TypeScript 타입
+├── hooks/              # 커스텀 훅
+├── data/               # 프로그레션 트리 데이터
+└── docs/CHANGELOG.md
 ```
 
-### 상태관리
-- **zustand** 사용 (Redux 금지)
-- 스토어는 `src/stores/` 하위에 기능별 분리
-- localStorage persist (zustand/middleware)로 기본 저장
-- 서버 상태(Firebase)와 클라이언트 상태 분리
+## 고유 제약
+- 상태관리: zustand만 사용 (Redux 금지)
+- localStorage persist + Firebase 동기화 (서버/클라이언트 상태 분리)
+- Firebase Auth (Google) + Firestore (운동 기록)
+- Security Rules UID 기반 필수
+- 디자인: 다크 테마, 노란색(#ffc107)/빨간색(#ef4444) 액센트, 모바일 퍼스트
+- 스타일: Tailwind v4 (@tailwindcss/vite), 인라인 스타일 금지
+- 파일명: kebab-case, any 타입 금지
 
-### Firebase
-- 클라이언트: `src/lib/firebase.ts`
-- 환경변수: `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID` 등
-- Security Rules UID 기반 필수 적용
-- Auth (Google 로그인) + Firestore (운동 기록 동기화)
+## 검증 체크리스트
+- [ ] 빌드: npm run build 에러 없음
+- [ ] 운동 기록 저장 → Firebase 동기화
+- [ ] RPE 피드백 → 볼륨 자동 조절
 
-### 스타일링
-- **Tailwind CSS v4** (@tailwindcss/vite 플러그인)
-- CSS 변수로 디자인 토큰 관리 (`src/index.css`)
-- 인라인 스타일 금지, className으로 통일
-
-### 코드 규칙
-- 주석/커밋: 한국어
-- 컴포넌트: 함수형 + TypeScript (FC 타입 지양, Props 인터페이스 명시)
-- 파일명: kebab-case (`training-card.tsx`)
-- 타입: `src/types/`에서 중앙 관리, `any` 금지
-
----
-
-## 📁 파일 구조
-```
-saitama-training/
-├── src/
-│   ├── components/       # 기능별 컴포넌트
-│   ├── stores/           # zustand 스토어
-│   ├── lib/              # firebase, 유틸리티
-│   ├── types/            # 타입 정의
-│   ├── hooks/            # 커스텀 훅
-│   ├── App.tsx           # 라우팅 루트
-│   ├── main.tsx          # 엔트리포인트
-│   └── index.css         # Tailwind + CSS 변수
-├── docs/
-│   └── CHANGELOG.md      # 작업 이력
-├── CLAUDE.md             # 프로젝트 컨텍스트
-├── .env.example          # 환경변수 템플릿
-└── package.json
-```
-
-## 실행 방법
-```bash
-cp .env.example .env      # 환경변수 설정
-npm install
-npm run dev               # http://localhost:5173
-```
-
----
-
-## 📊 개선 로드맵
-
-### 완료
-| 기능 | 세션 |
-|------|------|
-| 코어 루프 MVP (홈/운동/프로그레션/통계/프로필) | 세션 2 |
-| Firebase Auth + Firestore 동기화 | 세션 2,4 |
-| 프로그레션 트리 데이터 + UI | 세션 2 |
-| 히어로 랭크 시스템 + 랭크업 애니메이션 | 세션 2,5 |
-| 세트 카운터 + 휴식 타이머 | 세션 2 |
-| 기록/통계 대시보드 (주간/월간 차트) | 세션 2,5 |
-| PWA (오프라인 지원 + SW 업데이트) | 세션 2,4 |
-| 3축 프로그레션 + 달리기 트랙 + 스마트 코치 | 세션 3 |
-| 로드맵/플랜 계산기 | 세션 4 |
-| 개인화 (온보딩, 목적, 닉네임, D-day) | 세션 5 |
-| UI/UX 개선 (스트릭, 차트, 진행률 바, 초기화) | 세션 5 |
-| 운동 방법론 개선 (비율RPE, 트랙별 레벨업, 볼륨캡, 설명 페이지) | 세션 6 |
-
-### 미착수
-| 우선순위 | 기능 | 설명 |
-|---------|------|------|
-| P0 | 오늘의 트레이닝 화면 | ✅ 완료 |
-| P0 | 프로그레션 트리 데이터 + UI | ✅ 완료 |
-| P0 | RPE 피드백 → 자동 조절 로직 | ✅ 완료 |
-| P0 | Firebase Auth + 프로필 | ✅ 완료 |
-| P1 | 히어로 랭크 시스템 | ✅ 완료 |
-| P1 | 세트 카운터 + 휴식 타이머 | ✅ 완료 |
-| P1 | 기록/통계 대시보드 | ✅ 완료 |
-| P2 | 랭크업 애니메이션 | ✅ 완료 |
-| P2 | PWA + GitHub Pages 배포 | ✅ 완료 |
-| P2 | 소셜 기능 (친구 랭킹) | 🔵 미착수 |
-
----
-
-## 📚 LEARNED (프로젝트 교훈)
-
-- [2026-02-13] CHANGELOG는 `docs/CHANGELOG.md`에 있음 (루트 아님)
+## 참조
+- CC/CX 파일 담당: agent_docs/domain-map.md
+- CHANGELOG: docs/CHANGELOG.md
