@@ -5,6 +5,9 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   base: '/Saitama-training/',
   plugins: [react(), tailwindcss()],
+  server: {
+    port: 5130,
+  },
   build: {
     rollupOptions: {
       output: {
