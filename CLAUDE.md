@@ -16,9 +16,66 @@ Vercel (git push = 자동 배포)
 ## 구조
 ```
 src/
-├── components/         # training/, progression/, rank/, stats/, ui/
-├── stores/             # zustand 스토어 (기능별 분리)
-├── lib/                # firebase.ts, smart-coach.ts, plan-calculator.ts
+├── components/
+│   ├── training/
+│   │   ├── home-page.tsx          # 홈 오케스트레이터
+│   │   ├── home/                  # 홈 서브컴포넌트
+│   │   │   ├── hero-header.tsx
+│   │   │   ├── saitama-progress.tsx
+│   │   │   ├── next-milestone-banner.tsx
+│   │   │   ├── warning-banner.tsx
+│   │   │   ├── training-section.tsx
+│   │   │   ├── programs-section.tsx
+│   │   │   └── coach-section.tsx
+│   │   ├── workout-page.tsx       # 운동 오케스트레이터
+│   │   ├── workout/               # 운동 서브컴포넌트
+│   │   │   ├── workout-types.ts
+│   │   │   ├── run-workout.tsx
+│   │   │   ├── warmup-phase.tsx
+│   │   │   ├── rest-results.tsx
+│   │   │   ├── done-phase.tsx
+│   │   │   └── progress-bar.tsx
+│   │   ├── track-card.tsx, set-counter.tsx, rep-counter.tsx, rest-timer.tsx, rpe-feedback.tsx
+│   ├── onboarding/
+│   │   ├── onboarding-page.tsx    # 온보딩 오케스트레이터
+│   │   ├── onboarding-types.ts
+│   │   ├── step-purpose.tsx
+│   │   ├── step-profile.tsx
+│   │   ├── step-equipment.tsx
+│   │   └── step-levels.tsx
+│   ├── progression/
+│   │   ├── track-plan.tsx         # 플랜 오케스트레이터
+│   │   └── plan/                  # 플랜 서브컴포넌트
+│   │       ├── goal-card.tsx
+│   │       ├── schedule-card.tsx
+│   │       ├── frequency-selector.tsx
+│   │       ├── milestone-list.tsx
+│   │       └── weekly-plan.tsx
+│   ├── profile/
+│   │   ├── methodology-page.tsx   # 방법론 오케스트레이터
+│   │   └── methodology/           # 방법론 섹션 컴포넌트
+│   │       ├── section-progressive-overload.tsx
+│   │       ├── section-rpe.tsx
+│   │       ├── section-level-up.tsx
+│   │       ├── section-volume-cap.tsx
+│   │       ├── section-deload.tsx
+│   │       ├── section-rest-time.tsx
+│   │       ├── section-warmup.tsx
+│   │       ├── section-references.tsx
+│   │       ├── level-up-progress-bar.tsx
+│   │       └── reference-item.tsx
+│   ├── rank/, stats/, ui/
+├── stores/             # zustand 스토어 (단일 persist 스토어, 분리 불필요)
+├── lib/
+│   ├── smart-coach.ts             # 배럴 re-export
+│   ├── coach/                     # 코치 로직 분리
+│   │   ├── types.ts
+│   │   ├── programs.ts
+│   │   ├── tips.ts
+│   │   ├── saitama.ts
+│   │   ├── rest.ts
+│   │   └── utils.ts
+│   ├── firebase.ts, plan-calculator.ts
 ├── types/              # TypeScript 타입
 ├── hooks/              # 커스텀 훅
 ├── data/               # 프로그레션 트리 데이터
