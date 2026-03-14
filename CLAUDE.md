@@ -7,7 +7,7 @@ React + TypeScript + Tailwind CSS v4 + Firebase + zustand
 ```bash
 cp .env.example .env    # Set Firebase environment variables
 npm install
-npm run dev             # http://localhost:5173
+npm run dev             # http://localhost:5130
 ```
 
 ## Deployment
